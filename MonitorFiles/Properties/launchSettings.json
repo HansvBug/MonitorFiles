@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "MonitorFiles": {
+      "commandName": "Project",
+      "commandLineArgs": "Install DebugMode=On"
+    }
+  }
+}

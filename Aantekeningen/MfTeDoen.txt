@@ -1,0 +1,54 @@
+Monitor Files
+V1(Major).2(Minor).3(Patch)
+
+major.minor[.build[.revision]] (example: 1.2.12.102)
+
+Programma om bestands datums bij te houden en zo te controleren of met name log bestanden zijn veverst.
+--V0.1.0---------------------------------------------------------------------------------------------------------------
+- logging													Gereed: 25-06-2022
+- scherm positie											Gereed: 25-06-2022
+- Create database bestand (SQLite)							Gereed: 25-06-2022
+- insert en delete nieuw item in source en township tabel	Gereed: 25-06-2022
+- laden combobox lijsten source en township					Gereed: 25-06-2022
+- insert volledig nieuw item								Gereed: 03-07-2022
+	
+- muteren items												Gereed: 09-08-2022
+	
+	
+- monitor bestanden											Gereed: 
+- monitor mappen volledig									Gereed: 
+- In beheer datagridview getallen rechts uitlijnen			Gereed:
+- Compress database											Gereed:
+- reset auto_ids van ALLEEN de tabel Items					Gereed:
+
+
+- database locatie in configure form kunnen wijzigen
+- testen wat er gbeurd als er geen db aanwezig is.
+
+verbeteren
+- controle op lengte invoer staat er 4 maal in.  Zoek op "const Int16 textlength = 100;"
+
+
+V1.0.0
+- monitor 1 soort bestandstypen in een map					Gereed: V1.1.0
+- monitor 2 of meer soorten bestandstypen in een map		Gereed: V1.2.0
+- kies eigen kleur in overzicht								Gereed: V1.3.0
+- Zoeken o peen tekst in een log bestand (BV ORA- of fout:)
+
+
+
+
+snelheid:
+Struc ipc class
+array ipv list
+
+V1.x.0
+- Export naar csv											Gereed: V1.4.0
+- Export naar Excel											Gereed: V1.5.0
+- Filter on overzicht										Gereed: V1.6.0
+
+
+
+
+int dpi = this.DeviceDpi;
+            button1.Text = dpi.ToString();
