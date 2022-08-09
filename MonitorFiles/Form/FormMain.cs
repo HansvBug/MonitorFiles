@@ -810,8 +810,6 @@ namespace MonitorFiles
             }
         }
 
-        // private bool CellValueChanged { get; set; }
-
         private void DataGridViewModify_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
             try
