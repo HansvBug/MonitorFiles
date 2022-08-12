@@ -79,6 +79,8 @@
             this.ComboBoxOptionsSource = new System.Windows.Forms.ComboBox();
             this.RadioButtonDeleteSource = new System.Windows.Forms.RadioButton();
             this.RadioButtonAddSource = new System.Windows.Forms.RadioButton();
+            this.OptionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.OptionsToolStripMenuItemOptions = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.PanelBottom.SuspendLayout();
@@ -100,7 +102,8 @@
             // 
             this.menuStrip1.ImageScalingSize = new System.Drawing.Size(28, 28);
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.ProgramToolStripMenuItem});
+            this.ProgramToolStripMenuItem,
+            this.OptionsToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Padding = new System.Windows.Forms.Padding(10, 4, 0, 4);
@@ -233,7 +236,6 @@
             this.TabControlMaintain.Size = new System.Drawing.Size(1542, 664);
             this.TabControlMaintain.TabIndex = 0;
             this.TabControlMaintain.SelectedIndexChanged += new System.EventHandler(this.tabControl2_SelectedIndexChanged);
-            this.TabControlMaintain.Selecting += new System.Windows.Forms.TabControlCancelEventHandler(this.TabControlMaintain_Selecting);
             this.TabControlMaintain.MouseDown += new System.Windows.Forms.MouseEventHandler(this.TabControlMaintain_MouseDown);
             this.TabControlMaintain.MouseUp += new System.Windows.Forms.MouseEventHandler(this.tabControl2_MouseUp);
             // 
@@ -692,6 +694,21 @@
             this.RadioButtonAddSource.UseVisualStyleBackColor = true;
             this.RadioButtonAddSource.CheckedChanged += new System.EventHandler(this.RadioButtonAddSource_CheckedChanged);
             // 
+            // OptionsToolStripMenuItem
+            // 
+            this.OptionsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.OptionsToolStripMenuItemOptions});
+            this.OptionsToolStripMenuItem.Name = "OptionsToolStripMenuItem";
+            this.OptionsToolStripMenuItem.Size = new System.Drawing.Size(91, 34);
+            this.OptionsToolStripMenuItem.Text = "Opties";
+            // 
+            // OptionsToolStripMenuItemOptions
+            // 
+            this.OptionsToolStripMenuItemOptions.Name = "OptionsToolStripMenuItemOptions";
+            this.OptionsToolStripMenuItemOptions.Size = new System.Drawing.Size(315, 40);
+            this.OptionsToolStripMenuItemOptions.Text = "Opties";
+            this.OptionsToolStripMenuItemOptions.Click += new System.EventHandler(this.OptionsToolStripMenuItemOptions_Click);
+            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 30F);
@@ -787,5 +804,7 @@
         private Button ButtonModifySave;
         private Button ButtonModifyCancel;
         private Label LabelModifyWarning;
+        private ToolStripMenuItem OptionsToolStripMenuItem;
+        private ToolStripMenuItem OptionsToolStripMenuItemOptions;
     }
 }

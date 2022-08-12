@@ -532,6 +532,104 @@ namespace MonitorFiles.Class
             return newComboBoxColumn;
         }
 
+        public void Compress()
+        {
+            // First make a copy
+            if (this.CopyDatabaseFile())
+            {
+                this.DbConnection.Close();
+
+                this.DbConnection.Open();
+                SQLiteCommand command = new(this.DbConnection);
+                command.Prepare();
+                command.CommandText = "vacuum;";
+
+                try
+                {
+                    command.ExecuteNonQuery();
+                    MfLogging.WriteToLogInformation("De database is succesvol gecomprimeerd.");
+                }
+                catch (SQLiteException ex)
+                {
+                    MfLogging.WriteToLogError("Het comprimeren van de database is mislukt.");
+                    MfLogging.WriteToLogError("Melding :");
+                    MfLogging.WriteToLogError(ex.Message);
+                    if (MfLogging.DebugMode)
+                    {
+                        MfLogging.WriteToLogDebug(ex.ToString());
+                    }
+                }
+                finally
+                {
+                    command.Dispose();
+                    this.DbConnection.Close();
+                }
+            }
+        }
+
+        private bool CopyDatabaseFile()
+        {
+            MfLogging.WriteToLogInformation("Maak eerst een kopie van de applicatie database voordat deze wordt gecomprimeerd.");
+            bool result = false;
+
+            if (string.IsNullOrEmpty(this.DatabaseFileName) || string.IsNullOrEmpty(Path.GetDirectoryName(this.DatabaseFileName)))
+            {
+                if (string.IsNullOrEmpty(this.DatabaseFileName))
+                {
+                    MfLogging.WriteToLogError("Database bestandsnaam ontbreekt.");
+                }
+                else if (string.IsNullOrEmpty(Path.GetDirectoryName(this.DatabaseFileName)))
+                {
+                    MfLogging.WriteToLogError("Pad naar Database bestand ontbreekt.");
+                }
+
+                return result;
+            }
+
+            MfLogging.WriteToLogInformation("Maak eerst een kopie van de applicatie database voordat deze wordt gecomprimeerd...");
+            string fileToCopy = this.DatabaseFileName;
+            DateTime dateTime = DateTime.UtcNow.Date;
+            string currentDate = dateTime.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture);
+            string backUpPath = Path.Combine(Path.GetDirectoryName(this.DatabaseFileName), MfSettings.BackUpFolder);
+            string newLocation = backUpPath + currentDate + "_" + MfSettings.SqlLiteDatabaseName;
+
+            if (Directory.Exists(backUpPath))
+            {
+                if (File.Exists(fileToCopy))
+                {
+                    if (!File.Exists(newLocation))
+                    {
+                        File.Copy(fileToCopy, newLocation, false);  // Overwrite file = false
+                        MfLogging.WriteToLogInformation("Het kopiëren van het bestand '" + MfSettings.SqlLiteDatabaseName + "' is gereed.");
+                        result = true;
+                    }
+                    else
+                    {
+                        DialogResult dialogResult = MessageBox.Show("Het bestand bestaat reeds. Wilt u het bestand overschrijven?", "Waarschuwing", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                        if (dialogResult == DialogResult.Yes)
+                        {
+                            File.Copy(fileToCopy, newLocation, true);  // overwrite file = true
+                            MfLogging.WriteToLogInformation("Het kopiëren van het bestand '" + MfSettings.SqlLiteDatabaseName + "' is gereed.");
+                            result = true;
+                        }
+                        else if (dialogResult == DialogResult.No)
+                        {
+                            MfLogging.WriteToLogInformation("Het kopiëren van het bestand '" + MfSettings.SqlLiteDatabaseName + "' is afgebroken.");
+                            MfLogging.WriteToLogInformation("Het bestand komt reeds voor.");
+                            result = false;
+                        }
+                    }
+                }
+                else
+                {
+                    MessageBox.Show(string.Format("De map '{0}' is niet aanwezig.", MfSettings.BackUpFolder), "Fout.", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    result = false;
+                }
+            }
+
+            return result;
+        }
+
 
         #region dispose
         /// <summary>

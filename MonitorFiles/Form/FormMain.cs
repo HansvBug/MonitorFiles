@@ -376,27 +376,21 @@ namespace MonitorFiles
                     //
                     break;
                 case "RowsRemoved":
-                    this.ButtonModifySave.Enabled = true;
                     this.ButtonModifyCancel.Enabled = true;
                     break;
                 case "CanNotSave":
-                    this.ButtonModifySave.Enabled = false;
                     this.ButtonModifyCancel.Enabled = true;
                     break;
                 case "CellValueChanged":
-                    this.ButtonModifySave.Enabled = true;
                     this.ButtonModifyCancel.Enabled = true;
                     break;
                 case "AddRecord":
-                    this.ButtonModifySave.Enabled = true;
                     this.ButtonModifyCancel.Enabled = true;                    
                     break;
                 case "Saved":
-                    this.ButtonModifySave.Enabled = false;
                     this.ButtonModifyCancel.Enabled = false;
                     break;
                 default:
-                    this.ButtonModifySave.Enabled = false;
                     this.ButtonModifyCancel.Enabled = false;
                     // add every new button here.
                     break;
@@ -513,7 +507,7 @@ namespace MonitorFiles
             SetStatusLabelMain = "opslaan nieuw item...";
 
             string orderAsString = TextBoxNewOrder.Text;
-            int orderAsNumber;
+            int? orderAsNumber;
 
             if (!string.IsNullOrEmpty(orderAsString))
             {
@@ -521,7 +515,7 @@ namespace MonitorFiles
             }
             else
             {
-                orderAsNumber = -1;
+                orderAsNumber = null;
             }
 
             MonitorItem Mi = new()
@@ -974,7 +968,6 @@ namespace MonitorFiles
                         this.ClearChangeDataTables();
                         this.CellValueChanged = false;
 
-                        this.ButtonModifySave.Enabled = false;
                         this.ButtonModifyCancel.Enabled = false;
                     }
                     catch (SQLiteException ex)
@@ -1232,24 +1225,18 @@ namespace MonitorFiles
             e.Cancel = true;
         }
 
-
-
         private void TabControlMaintain_MouseDown(object sender, MouseEventArgs e)
         {
             CurpageIndex = TabControlMaintain.SelectedIndex;
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void OptionsToolStripMenuItemOptions_Click(object sender, EventArgs e)
         {
-
-        }
-
-        private void TabControlMaintain_Selecting(object sender, TabControlCancelEventArgs e)
-        {
-            if (this.CellValueChanged && e.TabPageIndex != this.CurpageIndex)
-            {
-                e.Cancel = true;
-            }
+            this.SaveSettings();
+            FormConfigure frm = new FormConfigure();
+            frm.ShowDialog(this);
+            frm.Dispose();
+            this.GetSettings();
         }
     }
 
@@ -1262,7 +1249,7 @@ namespace MonitorFiles
         public int MaxDiffDays { get; set; }
         public int Source_id { get; set; }
         public int Township_id { get; set; }
-        public int Order { get; set; }
+        public int? Order { get; set; }
         public string Comment { get; set; }
     }
 }
