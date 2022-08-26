@@ -47,6 +47,7 @@ namespace MonitorFiles
                             // TODO; make it run un usb: DatabaseLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), SettingsDefault.ApplicationName, SettingsDefault.DatabaseFolder),
                             DatabaseLocation = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, MfSettings.DatabaseFolder),  // Database will be stored next to de Program. Not in the roaming folder because everyone uses the same database
                             ResetAllAutoIncrementFields = true,
+                            ItemTypeToShow = "All",
                         },
                     },
                     FormMain = new List<FormMainParams>()
@@ -201,6 +202,11 @@ namespace MonitorFiles
             /// Gets or sets a value indicating whether all Increment fields will be restted. = Sequences reset.
             /// </summary>
             public bool ResetAllAutoIncrementFields { get; set; }
+
+            /// <summary>
+            /// Gets or sets ItemTypeToShow.  (Valid, faulted, does not exists)
+            /// </summary>
+            public string? ItemTypeToShow { get; set; }
         }
 
         /// <summary>

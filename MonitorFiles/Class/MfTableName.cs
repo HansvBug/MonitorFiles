@@ -63,5 +63,13 @@
             get { return "TOWNSHIP_ID_IDX"; }
         }
 
+        /// <summary>
+        ///  Gets view name: VW_ITEMS.
+        /// </summary>
+        public static string VW_ITEMS
+        {
+            get { return "VW_ITEMS";  }
+        }
+
     }
 }

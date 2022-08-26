@@ -73,6 +73,27 @@ namespace MonitorFiles
                     "CREATE_DATE            VARCHAR(10)                                         ," +
                     "MODIFY_DATE            VARCHAR(10)                                         )";
 
+        private readonly string creVwItems = string.Format("create view if not exists {0} as ", MfTableName.VW_ITEMS) +
+                    "select i.ID, " +
+                    "i.GUID, " +
+                    "f.FILE_OR_FOLDER_NAME, " +
+                    "i.FILE_NAME, " +
+                    "i.FOLDER_NAME, " +
+                    "s.SOURCE_NAME, " + 
+                    "t.TOWNSHIP_NAME, " +
+                    "i.DIFF_MAX, " +
+                    "i.FILE_ORDER, " +
+                    "i.COMMENT, " +
+                    "i.CREATE_DATE, " +
+                    "i.MODIFY_DATE, " +
+                    "i.CREATED_BY, " +
+                    "i.MODIFIED_BY " +
+                    "from " +
+                    "ITEMS i " +                                                //TODO; string.format()
+                    "left join FILEFOLDER f on i.FILE_OR_FOLDER_ID = f.ID " +   //TODO; string.format()
+                    "left join SOURCE s on i.SOURCE_ID = s.ID " +               //TODO; string.format()
+                    "left join TOWNSHIP t on i.TOWNSHIP_ID = t.ID";             //TODO; string.format()
+
         /// <summary>
         /// Create the database file and the tables.
         /// </summary>
@@ -93,6 +114,8 @@ namespace MonitorFiles
                 
                 this.CreateIndex(this.createTblSourceIndex, MfTableName.SOURCE_ID_IDX, version);
                 this.CreateIndex(this.createTblTownshipIndex, MfTableName.TOWNSHIP_ID_IDX, version);
+
+                this.CreateTable(this.creVwItems, MfTableName.VW_ITEMS, version); // Create view
 
                 this.InsertFileFolder(version);
                 this.InsertEmptyRow(MfTableName.TOWNSHIP, "TOWNSHIP_NAME", version);

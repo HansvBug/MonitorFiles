@@ -39,6 +39,16 @@ namespace MonitorFiles
         /// </summary>
         public string? ArgDebug { get; set; }
 
+        /// <summary>
+        /// Gets or sets the CloseArgument argument.
+        /// </summary>
+        public string? CloseArgument { get; set; }
+
+        /// <summary>
+        /// Gets or sets the NoMessageBoxArgument argument.
+        /// </summary>
+        public string? NoMessageBoxArgument { get; set; }
+
         #region Dispose
         /// <summary>
         /// Implement IDisposable.
@@ -80,7 +90,7 @@ namespace MonitorFiles
             foreach (string arg in args)
             {
                 string argument = Convert.ToString(arg, CultureInfo.InvariantCulture);
-                this.CmdLineArg.Add(argument);  // 0 = program name
+                this.CmdLineArg.Add(argument);  // 0 = program name.
                 switch (argument)
                 {
                     case "Install":
@@ -88,6 +98,12 @@ namespace MonitorFiles
                         break;
                     case "DebugMode=On":
                         this.ArgDebug = "DebugMode=On";
+                        break;
+                    case "Close":
+                        this.CloseArgument = "Close";  // Close program afterwards.
+                        break;
+                    case "NoMessageBox":
+                        this.NoMessageBoxArgument = "NoMessageBox"; //Avoid message boxes when the tool is activated via the cmd line.
                         break;
                 }
             }

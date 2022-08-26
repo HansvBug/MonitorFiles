@@ -2,6 +2,7 @@
 using System.Data.SQLite;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Xml;
 using Microsoft.Win32.SafeHandles;
 
 
@@ -11,8 +12,7 @@ namespace MonitorFiles.Class
     {
         private readonly SafeHandle safeHandle = new SafeFileHandle(IntPtr.Zero, true); // Instantiate a SafeHandle instance.
         private bool disposed;  // Flag: Has Dispose already been called?      
-
-
+        private bool WrongLogFilesExist { get; set; }
         private BindingSource bndSource = new();
 
         /// <summary>
@@ -402,7 +402,7 @@ namespace MonitorFiles.Class
             }
         }
 
-        public void GetAllItems()
+        public void GetAllItemsToMaintain()
         {
             /*string selectSql = "select ID, GUID, FILE_OR_FOLDER_ID, FILE_NAME as Log_bestand, FOLDER_NAME as Locatie, ";
             selectSql += "DIFF_MAX as Max_verschil_in_dagen, ";
@@ -436,7 +436,7 @@ namespace MonitorFiles.Class
                 };
                 this.Da.Fill(this.Dt);
 
-                this.BndSource.DataSource = this.Dt;
+                this.BndSource.DataSource = this.Dt.DefaultView;  // DefaultView is needed for filtering the data
                 this.dgv.DataSource = this.BndSource;
 
                 Dictionary<DataGridViewComboBoxColumn, string> cmbAndColumnName = new();
@@ -530,6 +530,189 @@ namespace MonitorFiles.Class
             }
 
             return newComboBoxColumn;
+        }
+
+        public MfItemsData GetAllItemsToMonitor()
+        {
+            string selectSql = "select ID, GUID, FILE_OR_FOLDER_NAME as Bestand_of_map, FILE_NAME as Log_bestand, FOLDER_NAME as Locatie, ";
+            selectSql += "SOURCE_NAME as Bron, TOWNSHIP_NAME as Gemeente, ";
+            selectSql += "DIFF_MAX as Max_verschil_in_dagen, ";
+            selectSql += "FILE_ORDER as Volgorde, COMMENT as Opmerking ";
+            // selectSql += "CREATE_DATE as Datum_aangemaakt, MODIFY_DATE as Datum_gewijzigd, ";
+            // selectSql += "CREATED_BY as Aangemaakt_door, MODIFIED_BY as Gewijzigd_door ";
+            selectSql += string.Format("from {0}", MfTableName.VW_ITEMS);
+
+            
+            MfItemsData itemsData = new();
+
+            DbConnection.Open();
+            SQLiteCommand command = new(selectSql, this.DbConnection);
+            try
+            {
+                SQLiteDataReader dr = command.ExecuteReader();
+                if (dr.HasRows)
+                {
+                    DateTime fileCreationDate;
+                    DateTime fileModification;
+                    DateTime dateModification;
+                    DateTime currentDateTime = DateTime.UtcNow.Date;
+                    int daysDifference;
+                    string curFile = string.Empty;
+
+                    while (dr.Read())
+                    {
+                        using MfItemData itemData = new();
+                        itemData.ID = int.Parse(dr[0].ToString() ?? string.Empty, CultureInfo.InvariantCulture);
+                        itemData.GUID = dr[1].ToString() ?? string.Empty;
+
+                        if (dr[2] != DBNull.Value)
+                        {
+                            itemData.FILE_OR_FOLDER_NAME = dr[2].ToString() ?? string.Empty;
+                        }
+                        else
+                        {
+                            itemData.FILE_OR_FOLDER_NAME = String.Empty;
+                        }
+
+                        if (dr[3] != DBNull.Value)
+                        {
+                            itemData.FILE_NAME = dr[3].ToString() ?? string.Empty;
+                        }
+                        else
+                        {
+                            itemData.FILE_NAME = String.Empty;
+                        }
+
+                        if (dr[4] != DBNull.Value)
+                        {
+                            itemData.FOLDER_NAME = dr[4].ToString() ?? string.Empty;
+                        }
+                        else
+                        {
+                            itemData.FOLDER_NAME = String.Empty;
+                        }
+
+                        if (dr[5] != DBNull.Value)
+                        {
+                            itemData.SOURCE_NAME = dr[5].ToString() ?? string.Empty;
+                        }
+                        else
+                        {
+                            itemData.SOURCE_NAME = String.Empty;
+                        }
+
+                        if(dr[6] != DBNull.Value)
+                        {
+                            itemData.TONWSHIP_NAME = dr[6].ToString() ?? string.Empty;
+                        }
+                        else
+                        {
+                            itemData.TONWSHIP_NAME = String.Empty;
+                        }
+
+                        if (dr[7] != DBNull.Value)
+                        {
+                            itemData.DIFF_MAX = int.Parse(dr[7].ToString() ?? string.Empty, CultureInfo.InvariantCulture);
+                        }
+                        else
+                        {
+                            itemData.DIFF_MAX = -1;
+;
+                        }
+
+                        if (dr[8] != DBNull.Value)
+                        {
+                            itemData.FILE_ORDER = int.Parse(dr[8].ToString() ?? string.Empty, CultureInfo.InvariantCulture);
+                        }
+                        else
+                        {
+                            itemData.FILE_ORDER = -1;
+                        }
+
+                        if (!string.IsNullOrEmpty(itemData.FOLDER_NAME))
+                        {
+                            if (!string.IsNullOrEmpty(itemData.FILE_NAME))
+                            {
+                                curFile = Path.Combine(itemData.FOLDER_NAME, itemData.FILE_NAME);
+
+                                if (File.Exists(curFile))
+                                {
+                                    if (itemData.FILE_OR_FOLDER_NAME == "Bestand")
+                                    {
+                                        fileCreationDate = GetFileCreationDate(curFile);
+                                    }
+
+                                    fileModification = File.GetLastWriteTime(curFile);
+                                    dateModification = fileModification.Date;
+                                    daysDifference = (int)currentDateTime.Subtract(dateModification).TotalDays;
+
+                                    itemData.fileModificationDate = fileModification;
+                                    itemData.daysDifference = daysDifference;
+
+                                    if (itemData.DIFF_MAX != -1)
+                                    {
+                                        if (daysDifference > itemData.DIFF_MAX)
+                                        {
+                                            itemData.FileStatus = "Fout";
+                                        }
+                                        else if (daysDifference <= itemData.DIFF_MAX)
+                                        {
+                                            itemData.FileStatus = "Goed";
+                                        }
+                                    }
+                                    else
+                                    {
+                                        itemData.FileStatus = string.Empty;
+                                    }                                    
+                                }
+                                else
+                                {
+                                    itemData.FileStatus = "Bestand bestaat niet (meer).";
+                                }
+                            }
+                            else
+                            {
+                                MfLogging.WriteToLogWarning("Item bevat geen bestandsnaam.");
+                            }
+                        }
+                        else
+                        {
+                            MfLogging.WriteToLogWarning("Item bevat geen map naam.");
+                        }
+                        
+                        itemsData.Items.Add(itemData);
+                    }                    
+                }
+
+                dr.Close();
+                return itemsData;
+            }
+            
+            catch (FormatException ex)
+            {
+                MfLogging.WriteToLogError(string.Format("Fout bij het ophalen van alle gegevens van de tabel : {0}.", MfTableName.ITEMS));
+                MfLogging.WriteToLogError(ex.Message);
+                MfLogging.WriteToLogError(ex.ToString());
+
+                return itemsData;
+            }
+            catch (SQLiteException ex)
+            {
+                MfLogging.WriteToLogError(string.Format("Fout bij het ophalen van alle gegevens van de tabel : {0}.", MfTableName.ITEMS));
+                MfLogging.WriteToLogError(ex.Message);
+                MfLogging.WriteToLogError(ex.ToString());
+                return itemsData;
+            }
+            finally
+            {
+                this.DbConnection.Close();                
+            }
+        }
+
+        private DateTime GetFileCreationDate(string file)
+        {
+            DateTime FileCreation;
+            return FileCreation = File.GetCreationTime(file);
         }
 
         public void Compress()

@@ -1,18 +1,24 @@
 using MonitorFiles.Class;
+using System;
 using System.Data;
 using System.Data.SQLite;
+using System.Diagnostics.Metrics;
 using System.Globalization;
+using System.Windows.Forms;
+using System.Xml.Linq;
 
 namespace MonitorFiles
 {
     public partial class FormMain : Form
-    {     
+    {
         #region Initialize
         public FormMain()
         {
             InitializeComponent();
 
             bindingSourceItemsMaintain = new();
+            bindingSourceItemsMonitor = new();
+            dtMonitorItems = new();
 
             this.Text = MfSettings.ApplicationName;
             this.SetStatusLabelMain = "Welkom.";
@@ -22,13 +28,13 @@ namespace MonitorFiles
             GetDebugMode();             // DebugMode is a static class.
             this.StartLogging();
             this.LoadFormPosition();    // Load the last saved form position.            
-            InitializeApp();
-            this.EnableFunctions(ApplicationAccess.Full.ToString());
+            InitializeApp();            
 
             bindingSourceDgvModify = new();
             changeTableAdded = new();
             changeTableModified = new();
             this.changeTableDeleted = new();
+            bndMonitorItems = new();
         }
 
         private BindingSource bindingSourceDgvModify;
@@ -37,7 +43,9 @@ namespace MonitorFiles
         /// Gets or sets the application settings. Holds the user and application setttings.
         /// </summary>
         public dynamic? JsonObjSettings { get; set; }
-        
+        private bool NoMessageBoxArgument { get; set; } = false; // Prevent message boxes when the tool is activated via the cmd line
+        private bool CloseArgument { get; set; } = false;
+
         private enum ApplicationAccess
         {
             None,
@@ -51,12 +59,15 @@ namespace MonitorFiles
         }
 
         private BindingSource bindingSourceItemsMaintain;
+        private BindingSource bindingSourceItemsMonitor;
 
         private MfApplicationDatabaseMaintain tblMaintenance;  // wordt nog niet gebruikt !!!
 
         private DataTable? changeTableDeleted;
         private DataTable? changeTableAdded;
         private DataTable? changeTableModified;
+        private DataTable dtMonitorItems;
+        private BindingSource bndMonitorItems;
 
         private void GetSettings()
         {
@@ -92,7 +103,7 @@ namespace MonitorFiles
             }
         }
 
-        private static void GetDebugMode()
+        private void GetDebugMode()
         {
             using MfProcessArguments getArg = new();
             foreach (string arg in getArg.CmdLineArg)
@@ -102,6 +113,16 @@ namespace MonitorFiles
                 if (argument == getArg.ArgDebug)
                 {
                     MfDebugMode.DebugMode = true;
+                }
+
+                if (argument == getArg.CloseArgument)
+                {
+                    CloseArgument = true;
+                }
+
+                if (argument == getArg.NoMessageBoxArgument)
+                {
+                    this.NoMessageBoxArgument = true;
                 }
             }
         }
@@ -149,11 +170,45 @@ namespace MonitorFiles
 
         private void InitializeApp()
         {
-            MfApplicationDatabaseMaintain Dbmaintain = new();
+            this.EnableFunctions(ApplicationAccess.Full.ToString());
+
             RadioButtonAddSource.Checked = true;
             RadioButtonAddTownship.Checked = true;
             ButtonNewSave.Enabled = false;
             this.CellValueChanged = false;
+
+            SetColumnNames();
+
+            string ItemsToShow = this.JsonObjSettings.AppParam[0].ItemTypeToShow;
+
+            if (ItemsToShow == "All")
+            {
+                this.OptionsToolStripMenuItemShowAllItems.Checked = true;
+                this.OptionsToolStripMenuItemShowFaultedItems.Checked = false;
+                this.OptionsToolStripMenuItemShowFileIsGoneItems.Checked = false;
+                this.OptionsToolStripMenuItemShowValidItems.Checked = false;
+            }
+            else if (ItemsToShow == "Faulted")
+            {
+                this.OptionsToolStripMenuItemShowAllItems.Checked = false;
+                this.OptionsToolStripMenuItemShowFaultedItems.Checked = true;
+                this.OptionsToolStripMenuItemShowFileIsGoneItems.Checked = false;
+                this.OptionsToolStripMenuItemShowValidItems.Checked = false;
+            }
+            else if (ItemsToShow  == "Gone")
+            {
+                this.OptionsToolStripMenuItemShowAllItems.Checked = false;
+                this.OptionsToolStripMenuItemShowFaultedItems.Checked = false;
+                this.OptionsToolStripMenuItemShowFileIsGoneItems.Checked = true;
+                this.OptionsToolStripMenuItemShowValidItems.Checked = false;
+            }
+            else if (ItemsToShow  == "Valid")
+            {
+                this.OptionsToolStripMenuItemShowAllItems.Checked = false;
+                this.OptionsToolStripMenuItemShowFaultedItems.Checked = false;
+                this.OptionsToolStripMenuItemShowFileIsGoneItems.Checked = false;
+                this.OptionsToolStripMenuItemShowValidItems.Checked = true;
+            }
         }
 
         #endregion Initialize
@@ -249,13 +304,13 @@ namespace MonitorFiles
             if (this.CheckDatabaseFileExists())
             {
                 this.EnableFunctions(ApplicationAccess.Full.ToString());
-
                 GetComboboxItems(true); // get all source names and township names as items for the comboboxes
+                LoadFile();  // Get all records from the Items table
             }
             else
             {
                 this.EnableFunctions(ApplicationAccess.Minimal.ToString());
-            }            
+            }
         }
 
         private void CreateDatabase()
@@ -395,6 +450,130 @@ namespace MonitorFiles
                     // add every new button here.
                     break;
             }
+        }
+
+        private void SetColumnNames()
+        {           
+            DataTable dt = new DataTable();
+            dt.Clear();
+            
+            dt.Columns.Add("Status");
+            dt.Columns.Add("ID");
+            dt.Columns.Add("GUID");
+            dt.Columns.Add("Bestand of map");
+            dt.Columns.Add("Log bestand");
+            dt.Columns.Add("Locatie");
+            dt.Columns.Add("Datum gewijzigd");
+            dt.Columns.Add("Max verschil in dagen");
+            dt.Columns.Add("Werkelijk verschil in dagen");
+            dt.Columns.Add("Bron");
+            dt.Columns.Add("Gemeente");
+            dt.Columns.Add("Volgorde");
+            dt.Columns.Add("Opmerking");
+        }
+        private void LoadFile()
+        {
+            LabelCurrentAction.Text = "De bestanden worden gecontroleerd...";
+
+            Cursor.Current = Cursors.WaitCursor;
+            ToolStripMenuItemInfo.BackColor = Color.LightGray;
+            ToolStripMenuItemInfo.Text = "Bezig Met controleren...";
+            ToolStripMenuItemInfo.Visible = true;
+
+            try
+            {
+                this.DataGridViewMonitor.SuspendLayout();
+                this.DataGridViewMonitor.CellFormatting -= new DataGridViewCellFormattingEventHandler(this.DataGridViewMonitor_CellFormatting);
+                MfApplicationDatabaseMaintain getItemms = new(DataGridViewMonitor, bindingSourceItemsMonitor);
+
+                AddItemToMonitorDgv(getItemms.GetAllItemsToMonitor(), DataGridViewMonitor);
+
+                this.DataGridViewMonitor.Columns["Id"].Visible = false;
+                this.DataGridViewMonitor.Columns["Guid"].Visible = false;
+                this.DataGridViewMonitor.AutoResizeColumns(DataGridViewAutoSizeColumnsMode.AllCells);
+
+                DataGridViewMonitor.CellFormatting += new DataGridViewCellFormattingEventHandler(this.DataGridViewMonitor_CellFormatting);
+                this.DataGridViewMonitor.ResumeLayout();
+
+                if (DataGridViewMonitor.RowCount == 0)
+                {
+                    ToolStripMenuItemInfo.Text = string.Empty;
+                    ToolStripMenuItemInfo.Visible = false;
+                }
+
+                LabelCurrentAction.Text = string.Empty;
+                ToolStripMenuItemInfo.Text = string.Empty;
+
+                l
+
+                this.Refresh();
+
+                Cursor.Current = Cursors.Default;
+            }
+            catch (Exception ex)
+            {
+                LabelCurrentAction.Text = string.Empty;
+                ToolStripMenuItemInfo.Text = "Bezig Met controleren...  --> Onverwachte fout opgetreden.";
+                this.Refresh();
+
+                Cursor.Current = Cursors.Default;
+                if (!this.NoMessageBoxArgument)
+                {
+                    MessageBox.Show("Het bestand met de logbestand namen is niet ingelezen." + Environment.NewLine + Environment.NewLine +
+                                "Controleer het log bestand.",
+                           "Fout",
+                           MessageBoxButtons.OK,
+                           MessageBoxIcon.Error);
+                }
+                MfLogging.WriteToLogError(string.Format("De tabel {0} is neit ingelezen.", MfTableName.ITEMS));
+                MfLogging.WriteToLogError("Melding:");
+                MfLogging.WriteToLogError(ex.Message);
+            }
+        }
+
+        private void AddItemToMonitorDgv(MfItemsData AllItems, DataGridView dgv)
+        {
+            // filter dtable
+            this.dtMonitorItems.Columns.Clear();
+
+            this.dtMonitorItems.Columns.Add("Status", typeof(string));
+            this.dtMonitorItems.Columns.Add("Id", typeof(int));
+            this.dtMonitorItems.Columns.Add("Guid", typeof(string));
+            this.dtMonitorItems.Columns.Add("Bestand of map", typeof(string));
+            this.dtMonitorItems.Columns.Add("Log bestand", typeof(string));
+            this.dtMonitorItems.Columns.Add("Locatie", typeof(string));
+            this.dtMonitorItems.Columns.Add("Datum gewijzigd", typeof(DateTime));
+            this.dtMonitorItems.Columns.Add("Max verschil in dagen", typeof(int));
+            this.dtMonitorItems.Columns.Add("Werkelijk verschil in dagen", typeof(int));
+            this.dtMonitorItems.Columns.Add("Bron", typeof(string));
+            this.dtMonitorItems.Columns.Add("Gemeente", typeof(string));
+            this.dtMonitorItems.Columns.Add("Volgorde", typeof(int));
+            this.dtMonitorItems.Columns.Add("Opmerking", typeof(string));            
+
+            // string ItemsToShow = this.JsonObjSettings.AppParam[0].ItemTypeToShow;
+            foreach (MfItemData item in AllItems.Items)
+            {
+                DataRow row = this.dtMonitorItems.NewRow();
+
+                row["Status"] = item.FileStatus;
+                row["Id"] = item.ID;
+                row["Guid"] = item.GUID;
+                row["Bestand of map"] = item.FILE_OR_FOLDER_NAME;
+                row["Log bestand"] = item.FILE_NAME;
+                row["Locatie"] = item.FOLDER_NAME;
+                row["Datum gewijzigd"] = item.fileModificationDate;
+                row["Max verschil in dagen"] = item.DIFF_MAX;
+                row["Werkelijk verschil in dagen"] = item.daysDifference;
+                row["Bron"] = item.SOURCE_NAME;
+                row["Gemeente"] = item.TONWSHIP_NAME;
+                row["Volgorde"] = item.FILE_ORDER;
+                row["Opmerking"] = item.COMMENT;
+
+                this.dtMonitorItems.Rows.Add(row);
+            }
+
+            bndMonitorItems.DataSource = this.dtMonitorItems;
+            this.DataGridViewMonitor.DataSource = bndMonitorItems;
         }
         #endregion form load
 
@@ -751,7 +930,7 @@ namespace MonitorFiles
             this.DataGridViewModify.EditingControlShowing -= new DataGridViewEditingControlShowingEventHandler(this.DataGridViewModify_EditingControlShowing);
             this.DataGridViewModify.CellValidated -= new DataGridViewCellEventHandler(this.DataGridViewModify_CellValidated);
            
-            getItemms.GetAllItems();  // !
+            getItemms.GetAllItemsToMaintain();  // !
 
             DataGridViewModify.Columns[0].Visible = false; // ID
             DataGridViewModify.Columns[1].Visible = false; // GUID
@@ -989,7 +1168,7 @@ namespace MonitorFiles
 
                         this.DataGridViewModify.DataSource = null;
                         this.tblMaintenance.BndSource.DataSource = null;
-                        this.tblMaintenance.GetAllItems();  // Reload the data
+                        this.tblMaintenance.GetAllItemsToMaintain();  // Reload the data
                         this.EnableFunctions(ApplicationAccess.CellValueChanged.ToString());
                     }
                     catch (Exception ex)
@@ -1004,7 +1183,7 @@ namespace MonitorFiles
                             MfLogging.WriteToLogError(ex.ToString());
                         }
 
-                        this.tblMaintenance.GetAllItems();  // Reload the data
+                        this.tblMaintenance.GetAllItemsToMaintain();  // Reload the data
                         this.EnableFunctions(ApplicationAccess.CellValueChanged.ToString());
                     }
                     // Update domain values in all tables. If a record in Class is deleted then in Orde the attrib. class_id must be updated.
@@ -1238,6 +1417,138 @@ namespace MonitorFiles
             frm.Dispose();
             this.GetSettings();
         }
+
+        private void DataGridViewMonitor_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            //Formating the columns
+            for (int i = 0; i < DataGridViewMonitor.Rows.Count; i++)
+            {
+                for (int j = 0; j < DataGridViewMonitor.Columns.Count; j++)
+                {
+                    if (DataGridViewMonitor.Rows[i].Cells[j].Value != null)
+                    {
+                        DataGridViewMonitor.Columns["Max verschil in dagen"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+                        DataGridViewMonitor.Columns["Werkelijk verschil in dagen"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+                        DataGridViewMonitor.Columns["Volgorde"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+
+                        //format the numbers
+                        this.DataGridViewMonitor.Columns["Max verschil in dagen"].DefaultCellStyle.Format = "#,0.";
+                        this.DataGridViewMonitor.Columns["Werkelijk verschil in dagen"].DefaultCellStyle.Format = "#,0.";
+                        this.DataGridViewMonitor.Columns["Volgorde"].DefaultCellStyle.Format = "#,0.";
+                    }
+                }
+            }
+
+            //Color the rows
+            
+            int good = 0;
+            int wrong = 0;
+
+            if (DataGridViewMonitor.Rows.Count > 0)
+            {
+                foreach (DataGridViewRow row in DataGridViewMonitor.Rows)
+                {
+                    if (row.Cells["Status"].Value.ToString() == "Goed")
+                    {
+                        row.DefaultCellStyle.BackColor = Color.LightGreen;
+                        good++;
+                    }
+                    else if (row.Cells["Status"].Value.ToString() == "Fout")
+                    {
+                        row.DefaultCellStyle.BackColor = Color.Tomato;
+                        wrong++;
+                    }
+                    else if (row.Cells["Status"].Value.ToString() != "Bestand bestaat niet (meer).")
+                    {
+                        row.DefaultCellStyle.BackColor = Color.Orange;
+                        wrong++;
+                    }
+                    else
+                    {
+                        row.DefaultCellStyle.BackColor = Color.LightYellow;
+                    }
+                }
+
+                //this.Text = "Monitor Log Files" + "   --> Aantal goed: " + good.ToString() + "   --   Aantal fout: " + wrong.ToString();
+
+                if (wrong == 0)
+                {
+                    ToolStripMenuItemInfo.BackColor = Color.LawnGreen;
+                    ToolStripMenuItemInfo.Text = "Alle bestanden zijn actueel.";
+                }
+                else
+                {
+                    ToolStripMenuItemInfo.BackColor = Color.Tomato;
+                    ToolStripMenuItemInfo.Text = wrong.ToString() + " Fout(en) gevonden.";
+                }
+            }
+        }
+
+        private void DataGridViewMonitor_Scroll(object sender, ScrollEventArgs e)
+        {
+            if (e.ScrollOrientation == ScrollOrientation.VerticalScroll || e.ScrollOrientation == ScrollOrientation.HorizontalScroll)
+            {
+                DataGridViewMonitor.CellFormatting -= new DataGridViewCellFormattingEventHandler(this.DataGridViewMonitor_CellFormatting);
+            }
+            else
+            {
+                DataGridViewMonitor.CellFormatting += new DataGridViewCellFormattingEventHandler(this.DataGridViewMonitor_CellFormatting);
+            }
+        }
+
+        private void ProgramToolStripMenuItemLoadItems_Click(object sender, EventArgs e)
+        {
+            this.LoadFile();
+        }
+
+        private void OptionsToolStripMenuItemShowAllItems_Click(object sender, EventArgs e)
+        {
+            this.JsonObjSettings.AppParam[0].ItemTypeToShow = "All";
+
+            this.OptionsToolStripMenuItemShowAllItems.Checked = true;
+            this.OptionsToolStripMenuItemShowFaultedItems.Checked = false;
+            this.OptionsToolStripMenuItemShowFileIsGoneItems.Checked = false;
+            this.OptionsToolStripMenuItemShowValidItems.Checked = false;
+
+            this.bndMonitorItems.Filter = string.Empty;
+        }
+
+        private void OptionsToolStripMenuItemShowValidItems_Click(object sender, EventArgs e)
+        {
+            this.JsonObjSettings.AppParam[0].ItemTypeToShow = "Valid";
+
+            this.OptionsToolStripMenuItemShowAllItems.Checked = false;
+            this.OptionsToolStripMenuItemShowFaultedItems.Checked = false;
+            this.OptionsToolStripMenuItemShowFileIsGoneItems.Checked = false;
+            this.OptionsToolStripMenuItemShowValidItems.Checked = true;
+
+            this.bndMonitorItems.Filter = "Status = 'Goed'";
+        }
+
+        private void OptionsToolStripMenuItemShowFaultedItems_Click(object sender, EventArgs e)
+        {
+            this.JsonObjSettings.AppParam[0].ItemTypeToShow = "Faulted";
+
+            this.OptionsToolStripMenuItemShowAllItems.Checked = false;
+            this.OptionsToolStripMenuItemShowFaultedItems.Checked = true;
+            this.OptionsToolStripMenuItemShowFileIsGoneItems.Checked = false;
+            this.OptionsToolStripMenuItemShowValidItems.Checked = false;
+
+            this.bndMonitorItems.Filter = "Status = 'Fout'";
+        }
+
+        private void OptionsToolStripMenuItemShowFileIsGoneItems_Click(object sender, EventArgs e)
+        {
+            this.JsonObjSettings.AppParam[0].ItemTypeToShow = "Gone";
+
+            this.OptionsToolStripMenuItemShowAllItems.Checked = false;
+            this.OptionsToolStripMenuItemShowFaultedItems.Checked = false;
+            this.OptionsToolStripMenuItemShowFileIsGoneItems.Checked = true;
+            this.OptionsToolStripMenuItemShowValidItems.Checked = false;
+
+            this.bndMonitorItems.Filter = "Status = 'Bestand bestaat niet(meer).'";
+        }
+
     }
 
     public struct MonitorItem
