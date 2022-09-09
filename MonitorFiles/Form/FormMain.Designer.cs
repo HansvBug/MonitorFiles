@@ -54,6 +54,9 @@
             this.TabControlMaintain = new System.Windows.Forms.TabControl();
             this.TabPageNew = new System.Windows.Forms.TabPage();
             this.GroupBoxAddItem = new System.Windows.Forms.GroupBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.ComboBoxNewFileType = new System.Windows.Forms.ComboBox();
+            this.LabelFileType = new System.Windows.Forms.Label();
             this.TextBoxNewComment = new System.Windows.Forms.TextBox();
             this.LabelComment = new System.Windows.Forms.Label();
             this.ButtonNewCancel = new System.Windows.Forms.Button();
@@ -80,6 +83,12 @@
             this.ButtonModifyCancel = new System.Windows.Forms.Button();
             this.ButtonModifySave = new System.Windows.Forms.Button();
             this.TabPageOptions = new System.Windows.Forms.TabPage();
+            this.GroupBoxFileType = new System.Windows.Forms.GroupBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.ButtonOptionModifyFileType = new System.Windows.Forms.Button();
+            this.ComboBoxOptionsFileType = new System.Windows.Forms.ComboBox();
+            this.RadioButtonRemoveFileType = new System.Windows.Forms.RadioButton();
+            this.RadioButtonAddFileType = new System.Windows.Forms.RadioButton();
             this.GroupBoxOptionsTownship = new System.Windows.Forms.GroupBox();
             this.ButtonOptionModifyTownship = new System.Windows.Forms.Button();
             this.ComboBoxOptionsTownship = new System.Windows.Forms.ComboBox();
@@ -105,6 +114,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.DataGridViewModify)).BeginInit();
             this.PanelModifyBottom.SuspendLayout();
             this.TabPageOptions.SuspendLayout();
+            this.GroupBoxFileType.SuspendLayout();
             this.GroupBoxOptionsTownship.SuspendLayout();
             this.GroupBoxOptionsSource.SuspendLayout();
             this.SuspendLayout();
@@ -360,6 +370,9 @@
             // 
             // GroupBoxAddItem
             // 
+            this.GroupBoxAddItem.Controls.Add(this.label1);
+            this.GroupBoxAddItem.Controls.Add(this.ComboBoxNewFileType);
+            this.GroupBoxAddItem.Controls.Add(this.LabelFileType);
             this.GroupBoxAddItem.Controls.Add(this.TextBoxNewComment);
             this.GroupBoxAddItem.Controls.Add(this.LabelComment);
             this.GroupBoxAddItem.Controls.Add(this.ButtonNewCancel);
@@ -389,9 +402,35 @@
             this.GroupBoxAddItem.TabStop = false;
             this.GroupBoxAddItem.Text = "Voeg een bestand of een locatie toe";
             // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(279, 181);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(24, 25);
+            this.label1.TabIndex = 21;
+            this.label1.Text = "*.";
+            // 
+            // ComboBoxNewFileType
+            // 
+            this.ComboBoxNewFileType.FormattingEnabled = true;
+            this.ComboBoxNewFileType.Location = new System.Drawing.Point(309, 178);
+            this.ComboBoxNewFileType.Name = "ComboBoxNewFileType";
+            this.ComboBoxNewFileType.Size = new System.Drawing.Size(168, 33);
+            this.ComboBoxNewFileType.TabIndex = 20;
+            // 
+            // LabelFileType
+            // 
+            this.LabelFileType.AutoSize = true;
+            this.LabelFileType.Location = new System.Drawing.Point(20, 179);
+            this.LabelFileType.Name = "LabelFileType";
+            this.LabelFileType.Size = new System.Drawing.Size(182, 25);
+            this.LabelFileType.TabIndex = 19;
+            this.LabelFileType.Text = "Type bestand in map:";
+            // 
             // TextBoxNewComment
             // 
-            this.TextBoxNewComment.Location = new System.Drawing.Point(262, 378);
+            this.TextBoxNewComment.Location = new System.Drawing.Point(279, 412);
             this.TextBoxNewComment.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.TextBoxNewComment.Name = "TextBoxNewComment";
             this.TextBoxNewComment.Size = new System.Drawing.Size(832, 31);
@@ -400,7 +439,7 @@
             // LabelComment
             // 
             this.LabelComment.AutoSize = true;
-            this.LabelComment.Location = new System.Drawing.Point(20, 378);
+            this.LabelComment.Location = new System.Drawing.Point(20, 410);
             this.LabelComment.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.LabelComment.Name = "LabelComment";
             this.LabelComment.Size = new System.Drawing.Size(96, 25);
@@ -433,7 +472,7 @@
             // 
             // ButtonSelectFileOrFolder
             // 
-            this.ButtonSelectFileOrFolder.Location = new System.Drawing.Point(470, 40);
+            this.ButtonSelectFileOrFolder.Location = new System.Drawing.Point(487, 42);
             this.ButtonSelectFileOrFolder.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ButtonSelectFileOrFolder.Name = "ButtonSelectFileOrFolder";
             this.ButtonSelectFileOrFolder.Size = new System.Drawing.Size(200, 38);
@@ -445,7 +484,7 @@
             // LabelOrder
             // 
             this.LabelOrder.AutoSize = true;
-            this.LabelOrder.Location = new System.Drawing.Point(20, 335);
+            this.LabelOrder.Location = new System.Drawing.Point(20, 367);
             this.LabelOrder.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.LabelOrder.Name = "LabelOrder";
             this.LabelOrder.Size = new System.Drawing.Size(85, 25);
@@ -454,7 +493,7 @@
             // 
             // TextBoxNewOrder
             // 
-            this.TextBoxNewOrder.Location = new System.Drawing.Point(262, 330);
+            this.TextBoxNewOrder.Location = new System.Drawing.Point(279, 364);
             this.TextBoxNewOrder.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.TextBoxNewOrder.Name = "TextBoxNewOrder";
             this.TextBoxNewOrder.Size = new System.Drawing.Size(142, 31);
@@ -464,7 +503,7 @@
             // LabelTownship
             // 
             this.LabelTownship.AutoSize = true;
-            this.LabelTownship.Location = new System.Drawing.Point(20, 287);
+            this.LabelTownship.Location = new System.Drawing.Point(20, 319);
             this.LabelTownship.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.LabelTownship.Name = "LabelTownship";
             this.LabelTownship.Size = new System.Drawing.Size(92, 25);
@@ -474,7 +513,7 @@
             // ComboBoxNewTownship
             // 
             this.ComboBoxNewTownship.FormattingEnabled = true;
-            this.ComboBoxNewTownship.Location = new System.Drawing.Point(262, 282);
+            this.ComboBoxNewTownship.Location = new System.Drawing.Point(279, 316);
             this.ComboBoxNewTownship.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ComboBoxNewTownship.Name = "ComboBoxNewTownship";
             this.ComboBoxNewTownship.Size = new System.Drawing.Size(198, 33);
@@ -484,7 +523,7 @@
             // LabelSource
             // 
             this.LabelSource.AutoSize = true;
-            this.LabelSource.Location = new System.Drawing.Point(20, 238);
+            this.LabelSource.Location = new System.Drawing.Point(20, 270);
             this.LabelSource.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.LabelSource.Name = "LabelSource";
             this.LabelSource.Size = new System.Drawing.Size(49, 25);
@@ -494,7 +533,7 @@
             // ComboBoxNewSource
             // 
             this.ComboBoxNewSource.FormattingEnabled = true;
-            this.ComboBoxNewSource.Location = new System.Drawing.Point(262, 233);
+            this.ComboBoxNewSource.Location = new System.Drawing.Point(279, 267);
             this.ComboBoxNewSource.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ComboBoxNewSource.Name = "ComboBoxNewSource";
             this.ComboBoxNewSource.Size = new System.Drawing.Size(198, 33);
@@ -503,7 +542,7 @@
             // 
             // TextBoxNewMaxDiffDays
             // 
-            this.TextBoxNewMaxDiffDays.Location = new System.Drawing.Point(262, 185);
+            this.TextBoxNewMaxDiffDays.Location = new System.Drawing.Point(279, 219);
             this.TextBoxNewMaxDiffDays.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.TextBoxNewMaxDiffDays.Name = "TextBoxNewMaxDiffDays";
             this.TextBoxNewMaxDiffDays.Size = new System.Drawing.Size(142, 31);
@@ -513,7 +552,7 @@
             // 
             // TextBoxNewFolder
             // 
-            this.TextBoxNewFolder.Location = new System.Drawing.Point(262, 137);
+            this.TextBoxNewFolder.Location = new System.Drawing.Point(279, 139);
             this.TextBoxNewFolder.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.TextBoxNewFolder.Name = "TextBoxNewFolder";
             this.TextBoxNewFolder.Size = new System.Drawing.Size(832, 31);
@@ -522,7 +561,7 @@
             // 
             // TextBoxNewFile
             // 
-            this.TextBoxNewFile.Location = new System.Drawing.Point(262, 88);
+            this.TextBoxNewFile.Location = new System.Drawing.Point(279, 90);
             this.TextBoxNewFile.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.TextBoxNewFile.Name = "TextBoxNewFile";
             this.TextBoxNewFile.Size = new System.Drawing.Size(406, 31);
@@ -533,7 +572,7 @@
             // 
             this.ComboBoxNewFileOrFolder.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
             this.ComboBoxNewFileOrFolder.FormattingEnabled = true;
-            this.ComboBoxNewFileOrFolder.Location = new System.Drawing.Point(262, 40);
+            this.ComboBoxNewFileOrFolder.Location = new System.Drawing.Point(279, 42);
             this.ComboBoxNewFileOrFolder.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ComboBoxNewFileOrFolder.Name = "ComboBoxNewFileOrFolder";
             this.ComboBoxNewFileOrFolder.Size = new System.Drawing.Size(198, 33);
@@ -545,7 +584,7 @@
             // LabelMaxDaysDiff
             // 
             this.LabelMaxDaysDiff.AutoSize = true;
-            this.LabelMaxDaysDiff.Location = new System.Drawing.Point(20, 190);
+            this.LabelMaxDaysDiff.Location = new System.Drawing.Point(20, 222);
             this.LabelMaxDaysDiff.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.LabelMaxDaysDiff.Name = "LabelMaxDaysDiff";
             this.LabelMaxDaysDiff.Size = new System.Drawing.Size(242, 25);
@@ -590,7 +629,7 @@
             this.TabPageModify.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.TabPageModify.Name = "TabPageModify";
             this.TabPageModify.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.TabPageModify.Size = new System.Drawing.Size(1276, 513);
+            this.TabPageModify.Size = new System.Drawing.Size(1276, 514);
             this.TabPageModify.TabIndex = 1;
             this.TabPageModify.Text = "Muteer";
             this.TabPageModify.UseVisualStyleBackColor = true;
@@ -605,7 +644,7 @@
             this.DataGridViewModify.Name = "DataGridViewModify";
             this.DataGridViewModify.RowHeadersWidth = 72;
             this.DataGridViewModify.RowTemplate.Height = 25;
-            this.DataGridViewModify.Size = new System.Drawing.Size(1268, 455);
+            this.DataGridViewModify.Size = new System.Drawing.Size(1268, 456);
             this.DataGridViewModify.TabIndex = 0;
             this.DataGridViewModify.CellEnter += new System.Windows.Forms.DataGridViewCellEventHandler(this.DataGridViewModify_CellEnter);
             this.DataGridViewModify.CellValidated += new System.Windows.Forms.DataGridViewCellEventHandler(this.DataGridViewModify_CellValidated);
@@ -621,7 +660,7 @@
             this.PanelModifyBottom.Controls.Add(this.ButtonModifyCancel);
             this.PanelModifyBottom.Controls.Add(this.ButtonModifySave);
             this.PanelModifyBottom.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.PanelModifyBottom.Location = new System.Drawing.Point(4, 460);
+            this.PanelModifyBottom.Location = new System.Drawing.Point(4, 461);
             this.PanelModifyBottom.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.PanelModifyBottom.Name = "PanelModifyBottom";
             this.PanelModifyBottom.Size = new System.Drawing.Size(1268, 48);
@@ -663,16 +702,88 @@
             // 
             // TabPageOptions
             // 
+            this.TabPageOptions.Controls.Add(this.GroupBoxFileType);
             this.TabPageOptions.Controls.Add(this.GroupBoxOptionsTownship);
             this.TabPageOptions.Controls.Add(this.GroupBoxOptionsSource);
             this.TabPageOptions.Location = new System.Drawing.Point(4, 34);
             this.TabPageOptions.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.TabPageOptions.Name = "TabPageOptions";
             this.TabPageOptions.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.TabPageOptions.Size = new System.Drawing.Size(1276, 513);
+            this.TabPageOptions.Size = new System.Drawing.Size(1276, 514);
             this.TabPageOptions.TabIndex = 2;
             this.TabPageOptions.Text = "Opties";
             this.TabPageOptions.UseVisualStyleBackColor = true;
+            // 
+            // GroupBoxFileType
+            // 
+            this.GroupBoxFileType.Controls.Add(this.label2);
+            this.GroupBoxFileType.Controls.Add(this.ButtonOptionModifyFileType);
+            this.GroupBoxFileType.Controls.Add(this.ComboBoxOptionsFileType);
+            this.GroupBoxFileType.Controls.Add(this.RadioButtonRemoveFileType);
+            this.GroupBoxFileType.Controls.Add(this.RadioButtonAddFileType);
+            this.GroupBoxFileType.Location = new System.Drawing.Point(495, 10);
+            this.GroupBoxFileType.Name = "GroupBoxFileType";
+            this.GroupBoxFileType.Size = new System.Drawing.Size(428, 145);
+            this.GroupBoxFileType.TabIndex = 6;
+            this.GroupBoxFileType.TabStop = false;
+            this.GroupBoxFileType.Text = "Type bestand";
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(7, 81);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(24, 25);
+            this.label2.TabIndex = 23;
+            this.label2.Text = "*.";
+            // 
+            // ButtonOptionModifyFileType
+            // 
+            this.ButtonOptionModifyFileType.Location = new System.Drawing.Point(281, 77);
+            this.ButtonOptionModifyFileType.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.ButtonOptionModifyFileType.Name = "ButtonOptionModifyFileType";
+            this.ButtonOptionModifyFileType.Size = new System.Drawing.Size(138, 38);
+            this.ButtonOptionModifyFileType.TabIndex = 22;
+            this.ButtonOptionModifyFileType.Text = "Toevoegen";
+            this.ButtonOptionModifyFileType.UseVisualStyleBackColor = true;
+            this.ButtonOptionModifyFileType.Click += new System.EventHandler(this.ButtonOptionModifyFileType_Click);
+            // 
+            // ComboBoxOptionsFileType
+            // 
+            this.ComboBoxOptionsFileType.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
+            this.ComboBoxOptionsFileType.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            this.ComboBoxOptionsFileType.FormattingEnabled = true;
+            this.ComboBoxOptionsFileType.Location = new System.Drawing.Point(38, 78);
+            this.ComboBoxOptionsFileType.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.ComboBoxOptionsFileType.Name = "ComboBoxOptionsFileType";
+            this.ComboBoxOptionsFileType.Size = new System.Drawing.Size(231, 33);
+            this.ComboBoxOptionsFileType.TabIndex = 21;
+            this.ComboBoxOptionsFileType.TextChanged += new System.EventHandler(this.ComboBoxOptionsFileType_TextChanged);
+            // 
+            // RadioButtonRemoveFileType
+            // 
+            this.RadioButtonRemoveFileType.AutoSize = true;
+            this.RadioButtonRemoveFileType.Location = new System.Drawing.Point(151, 37);
+            this.RadioButtonRemoveFileType.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.RadioButtonRemoveFileType.Name = "RadioButtonRemoveFileType";
+            this.RadioButtonRemoveFileType.Size = new System.Drawing.Size(109, 29);
+            this.RadioButtonRemoveFileType.TabIndex = 20;
+            this.RadioButtonRemoveFileType.TabStop = true;
+            this.RadioButtonRemoveFileType.Text = "Verwijder";
+            this.RadioButtonRemoveFileType.UseVisualStyleBackColor = true;
+            // 
+            // RadioButtonAddFileType
+            // 
+            this.RadioButtonAddFileType.AutoSize = true;
+            this.RadioButtonAddFileType.Location = new System.Drawing.Point(7, 37);
+            this.RadioButtonAddFileType.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.RadioButtonAddFileType.Name = "RadioButtonAddFileType";
+            this.RadioButtonAddFileType.Size = new System.Drawing.Size(123, 29);
+            this.RadioButtonAddFileType.TabIndex = 19;
+            this.RadioButtonAddFileType.TabStop = true;
+            this.RadioButtonAddFileType.Text = "Toevoegen";
+            this.RadioButtonAddFileType.UseVisualStyleBackColor = true;
+            this.RadioButtonAddFileType.CheckedChanged += new System.EventHandler(this.RadioButtonAddFileType_CheckedChanged);
             // 
             // GroupBoxOptionsTownship
             // 
@@ -838,6 +949,8 @@
             this.PanelModifyBottom.ResumeLayout(false);
             this.PanelModifyBottom.PerformLayout();
             this.TabPageOptions.ResumeLayout(false);
+            this.GroupBoxFileType.ResumeLayout(false);
+            this.GroupBoxFileType.PerformLayout();
             this.GroupBoxOptionsTownship.ResumeLayout(false);
             this.GroupBoxOptionsTownship.PerformLayout();
             this.GroupBoxOptionsSource.ResumeLayout(false);
@@ -911,5 +1024,14 @@
         private ToolStripMenuItem OptionsToolStripMenuItemShowFileIsGoneItems;
         private ToolStripMenuItem OptionsToolStripMenuItemShowAllItems;
         private ToolStripSeparator toolStripMenuItem1;
+        private ComboBox ComboBoxNewFileType;
+        private Label LabelFileType;
+        private GroupBox GroupBoxFileType;
+        private Button ButtonOptionModifyFileType;
+        private ComboBox ComboBoxOptionsFileType;
+        private RadioButton RadioButtonRemoveFileType;
+        private RadioButton RadioButtonAddFileType;
+        private Label label1;
+        private Label label2;
     }
 }

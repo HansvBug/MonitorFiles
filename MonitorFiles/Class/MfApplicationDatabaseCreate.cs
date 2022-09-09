@@ -7,13 +7,13 @@ namespace MonitorFiles
     public class MfApplicationDatabaseCreate : MfSqliteDatabaseConnection
     {
         private int latestDbVersion;
-        private bool TablesExisits;
+        private bool TablesExist;
 
         public MfApplicationDatabaseCreate()
         {
             this.Error = false;
             this.latestDbVersion = MfSettings.DatabaseVersion;
-            TablesExisits = true;
+            TablesExist = true;
         }
 
         /// <summary>
@@ -37,8 +37,9 @@ namespace MonitorFiles
                     "SOURCE_ID          INTEGER                                             ," +
                     "TOWNSHIP_ID        INTEGER                                             ," +
                     "FILE_ORDER         INTEGER                                             ," +
+                    "FILE_TYPE_ID       INTEGER                                             ," +
                     "COMMENT            VARCHAR(500)                                        ," +
-                    "TYPE               VARCHAR(10)                                         ," +
+                    "FILE_TYPE          VARCHAR(10)                                         ," +
                     "CREATE_DATE        VARCHAR(10)                                         ," +
                     "MODIFY_DATE        VARCHAR(10)                                         , " +
                     "CREATED_BY         VARCHAR(50)                                         , " +
@@ -73,6 +74,15 @@ namespace MonitorFiles
                     "CREATE_DATE            VARCHAR(10)                                         ," +
                     "MODIFY_DATE            VARCHAR(10)                                         )";
 
+        private readonly string creTblFileType = string.Format("CREATE TABLE IF NOT EXISTS {0} (", MfTableName.FILETYPE) +
+                    "ID                 INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE   ," +
+                    "GUID               VARCHAR(50)  UNIQUE                                 ," +
+                    "FILE_TYPE_NAME     VARCHAR(100)                                        ," +
+                    "CREATE_DATE        VARCHAR(10)                                         ," +
+                    "MODIFY_DATE        VARCHAR(10)                                         )";
+
+        private readonly string createTblFileTypeIndex = string.Format("CREATE UNIQUE INDEX IF NOT EXISTS {0} ON {1}(ID)", MfTableName.FILE_TYPE_ID_IDX, MfTableName.FILETYPE);
+
         private readonly string creVwItems = string.Format("create view if not exists {0} as ", MfTableName.VW_ITEMS) +
                     "select i.ID, " +
                     "i.GUID, " +
@@ -83,6 +93,7 @@ namespace MonitorFiles
                     "t.TOWNSHIP_NAME, " +
                     "i.DIFF_MAX, " +
                     "i.FILE_ORDER, " +
+                    "ft.FILE_TYPE_NAME, " +
                     "i.COMMENT, " +
                     "i.CREATE_DATE, " +
                     "i.MODIFY_DATE, " +
@@ -92,7 +103,8 @@ namespace MonitorFiles
                     "ITEMS i " +                                                //TODO; string.format()
                     "left join FILEFOLDER f on i.FILE_OR_FOLDER_ID = f.ID " +   //TODO; string.format()
                     "left join SOURCE s on i.SOURCE_ID = s.ID " +               //TODO; string.format()
-                    "left join TOWNSHIP t on i.TOWNSHIP_ID = t.ID";             //TODO; string.format()
+                    "left join TOWNSHIP t on i.TOWNSHIP_ID = t.ID " +           //TODO; string.format()
+                    "left join FILETYPE ft on i.FILE_TYPE_ID = ft.ID";          //TODO; string.format()
 
         /// <summary>
         /// Create the database file and the tables.
@@ -111,19 +123,20 @@ namespace MonitorFiles
                 this.CreateTable(this.creTblSource, MfTableName.SOURCE, version);
                 this.CreateTable(this.creTblTownship, MfTableName.TOWNSHIP, version);
                 this.CreateTable(this.creTblFileFolder, MfTableName.FILEFOLDER, version);
+                this.CreateTable(this.creTblFileType, MfTableName.FILETYPE, version);
                 
                 this.CreateIndex(this.createTblSourceIndex, MfTableName.SOURCE_ID_IDX, version);
                 this.CreateIndex(this.createTblTownshipIndex, MfTableName.TOWNSHIP_ID_IDX, version);
+                this.CreateIndex(this.createTblFileTypeIndex, MfTableName.TOWNSHIP_ID_IDX, version);                
 
                 this.CreateTable(this.creVwItems, MfTableName.VW_ITEMS, version); // Create view
 
                 this.InsertFileFolder(version);
                 this.InsertEmptyRow(MfTableName.TOWNSHIP, "TOWNSHIP_NAME", version);
                 this.InsertEmptyRow(MfTableName.SOURCE, "SOURCE_NAME", version);
+                this.InsertEmptyRow(MfTableName.FILETYPE, "FILE_TYPE_NAME", version);
 
-                // add create tables....
-
-                this.TablesExisits = false;
+                this.TablesExist = false;
                 this.InsertMeta(version);  // Set the version 1
             }
             else if (this.latestDbVersion >= 2 && this.SelectMeta() == 1)
@@ -132,7 +145,7 @@ namespace MonitorFiles
 
                 // new...
 
-                this.TablesExisits = false;
+                this.TablesExist = false;
                 this.UpdateMeta(version);  // Set the version 2
             }
 
@@ -140,7 +153,7 @@ namespace MonitorFiles
             this.DbConnection.Dispose();
 
             this.ErrorMessage();
-            if (!this.Error && this.TablesExisits)
+            if (!this.Error && this.TablesExist)
             {
                 return true;
             }
@@ -551,7 +564,7 @@ namespace MonitorFiles
         {
             if (!this.Error)
             {
-                if (!this.TablesExisits)
+                if (!this.TablesExist)
                 {
                     MessageBox.Show("De database is aangemaakt.", "Informatie", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }

@@ -174,6 +174,7 @@ namespace MonitorFiles
 
             RadioButtonAddSource.Checked = true;
             RadioButtonAddTownship.Checked = true;
+            RadioButtonAddFileType.Checked = true;
             ButtonNewSave.Enabled = false;
             this.CellValueChanged = false;
 
@@ -396,6 +397,23 @@ namespace MonitorFiles
                 ComboBoxOptionsTownship.ValueMember = "Key";
             }
 
+            //File type
+            ComboBoxNewFileType.DataSource = null;
+            ComboBoxNewFileType.Items.Clear();
+            ComboBoxOptionsFileType.Items.Clear();
+
+            cbItems.Clear();
+            cbItems = getAttributes.GetFileTypeNames();
+            ComboBoxNewFileType.DataSource = new BindingSource(cbItems, null);
+            foreach (KeyValuePair<int, string> kvp in cbItems)
+            {
+                ComboBoxNewFileType.DisplayMember = "Value";
+                ComboBoxNewFileType.ValueMember = "Key";
+
+                ComboBoxOptionsFileType.DisplayMember = "Value";
+                ComboBoxOptionsFileType.ValueMember = "Key";
+            }
+
             //File or Folder
             if (allComboboxes)
             {
@@ -504,8 +522,10 @@ namespace MonitorFiles
                 LabelCurrentAction.Text = string.Empty;
                 ToolStripMenuItemInfo.Text = string.Empty;
 
-                l
-
+                if (this.JsonObjSettings != null)
+                {
+                    ItemsToShow(this.JsonObjSettings.AppParam[0].ItemTypeToShow);
+                }
                 this.Refresh();
 
                 Cursor.Current = Cursors.Default;
@@ -525,16 +545,69 @@ namespace MonitorFiles
                            MessageBoxButtons.OK,
                            MessageBoxIcon.Error);
                 }
-                MfLogging.WriteToLogError(string.Format("De tabel {0} is neit ingelezen.", MfTableName.ITEMS));
+                MfLogging.WriteToLogError(string.Format("De tabel {0} is niet ingelezen.", MfTableName.ITEMS));
                 MfLogging.WriteToLogError("Melding:");
                 MfLogging.WriteToLogError(ex.Message);
             }
         }
 
+        private void ItemsToShow(string FilterType)
+        {
+            if (FilterType == "All")
+            {
+                this.OptionsToolStripMenuItemShowAllItems.Checked = true;
+                this.OptionsToolStripMenuItemShowFaultedItems.Checked = false;
+                this.OptionsToolStripMenuItemShowFileIsGoneItems.Checked = false;
+                this.OptionsToolStripMenuItemShowValidItems.Checked = false;
+
+                this.bndMonitorItems.Filter = string.Empty;                
+            }
+            else if (FilterType == "Valid")
+            {
+                this.OptionsToolStripMenuItemShowAllItems.Checked = true;
+                this.OptionsToolStripMenuItemShowFaultedItems.Checked = false;
+                this.OptionsToolStripMenuItemShowFileIsGoneItems.Checked = false;
+                this.OptionsToolStripMenuItemShowValidItems.Checked = false;
+
+                this.bndMonitorItems.Filter = "Status = 'Goed'";
+            }
+            else if (FilterType == "Faulted")
+            {
+                this.OptionsToolStripMenuItemShowAllItems.Checked = false;
+                this.OptionsToolStripMenuItemShowFaultedItems.Checked = true;
+                this.OptionsToolStripMenuItemShowFileIsGoneItems.Checked = false;
+                this.OptionsToolStripMenuItemShowValidItems.Checked = false;
+
+                this.bndMonitorItems.Filter = "Status = 'Fout'";
+
+            }
+            else if (FilterType == "Gone")
+            {
+                this.OptionsToolStripMenuItemShowAllItems.Checked = false;
+                this.OptionsToolStripMenuItemShowFaultedItems.Checked = false;
+                this.OptionsToolStripMenuItemShowFileIsGoneItems.Checked = true;
+                this.OptionsToolStripMenuItemShowValidItems.Checked = false;
+
+                this.bndMonitorItems.Filter = "Status = 'Bestand bestaat niet(meer).'";
+            }
+            else
+            {
+
+            }        
+        }
+
         private void AddItemToMonitorDgv(MfItemsData AllItems, DataGridView dgv)
         {
-            // filter dtable
-            this.dtMonitorItems.Columns.Clear();
+            if (dtMonitorItems.Columns.Count > 0)
+            {
+                MfLogging.WriteToLogInformation("leeg maken monitoring datagridview");
+                for (int i = 0; i < dtMonitorItems.Columns.Count-1; i++)
+                {
+                    dtMonitorItems.Columns.RemoveAt(i);
+                }
+                this.dtMonitorItems.Rows.Clear();
+                this.dtMonitorItems.Columns.Clear();
+            }            
 
             this.dtMonitorItems.Columns.Add("Status", typeof(string));
             this.dtMonitorItems.Columns.Add("Id", typeof(int));
@@ -545,12 +618,12 @@ namespace MonitorFiles
             this.dtMonitorItems.Columns.Add("Datum gewijzigd", typeof(DateTime));
             this.dtMonitorItems.Columns.Add("Max verschil in dagen", typeof(int));
             this.dtMonitorItems.Columns.Add("Werkelijk verschil in dagen", typeof(int));
+            this.dtMonitorItems.Columns.Add("Bestandsextensie", typeof(string));
             this.dtMonitorItems.Columns.Add("Bron", typeof(string));
             this.dtMonitorItems.Columns.Add("Gemeente", typeof(string));
             this.dtMonitorItems.Columns.Add("Volgorde", typeof(int));
             this.dtMonitorItems.Columns.Add("Opmerking", typeof(string));            
-
-            // string ItemsToShow = this.JsonObjSettings.AppParam[0].ItemTypeToShow;
+            
             foreach (MfItemData item in AllItems.Items)
             {
                 DataRow row = this.dtMonitorItems.NewRow();
@@ -563,6 +636,7 @@ namespace MonitorFiles
                 row["Locatie"] = item.FOLDER_NAME;
                 row["Datum gewijzigd"] = item.fileModificationDate;
                 row["Max verschil in dagen"] = item.DIFF_MAX;
+                row["Bestandsextensie"] = item.FILE_TYPE_NAME;
                 row["Werkelijk verschil in dagen"] = item.daysDifference;
                 row["Bron"] = item.SOURCE_NAME;
                 row["Gemeente"] = item.TONWSHIP_NAME;
@@ -594,6 +668,7 @@ namespace MonitorFiles
             ComboBoxNewTownship.Text = string.Empty;
             TextBoxNewOrder.Text = string.Empty;
             TextBoxNewComment.Text = string.Empty;
+            ComboBoxNewFileType.Text = string.Empty;
             ButtonNewSave.Enabled = false;
             ComboBoxNewFileOrFolder.Text = "Bestand";
 
@@ -631,7 +706,7 @@ namespace MonitorFiles
         {
             if (ComboBoxNewFileOrFolder.Text != string.Empty)
             {    
-                ButtonSelectFileOrFolder.Enabled = true;
+                ButtonSelectFileOrFolder.Enabled = true;                
             }
             else
             {
@@ -663,6 +738,8 @@ namespace MonitorFiles
                 ButtonSelectFileOrFolder.Text = "Selecteer een bestand.";
                 TextBoxNewFile.Enabled = true;
                 TextBoxNewFolder.Enabled = false;
+                ComboBoxNewFileType.Enabled = false;
+                ComboBoxNewFileType.Text = string.Empty;
                 ActiveControl = ButtonSelectFileOrFolder;
             }
             else if (ComboBoxNewFileOrFolder.Text == "Map")
@@ -671,6 +748,7 @@ namespace MonitorFiles
                 TextBoxNewFile.Enabled = false;
                 TextBoxNewFolder.Enabled = true;
                 TextBoxNewFile.Text = string.Empty;
+                ComboBoxNewFileType.Enabled = true;
                 ActiveControl = ButtonSelectFileOrFolder;
             }
             else
@@ -678,6 +756,7 @@ namespace MonitorFiles
                 ButtonSelectFileOrFolder.Text = "Selecteer";
                 TextBoxNewFile.Enabled = false;
                 TextBoxNewFolder.Enabled = false;
+                ComboBoxNewFileType.Enabled = false;
             }
         }
 
@@ -697,12 +776,25 @@ namespace MonitorFiles
                 orderAsNumber = null;
             }
 
+            int? aFileType;
+            if (!string.IsNullOrEmpty(ComboBoxNewFileType.SelectedValue.ToString()))
+            {
+                aFileType = int.Parse(ComboBoxNewFileType.SelectedValue.ToString());
+            }
+            else
+            {
+                aFileType = null;
+            }
+
+
+
             MonitorItem Mi = new()
             {
                 Guid = Guid.NewGuid().ToString(),
                 FileOrFolder_id = int.Parse(ComboBoxNewFileOrFolder.SelectedValue.ToString()),
                 FileName = TextBoxNewFile.Text,
                 FolderName = TextBoxNewFolder.Text,
+                FileType_id = aFileType,
                 MaxDiffDays = int.Parse(TextBoxNewMaxDiffDays.Text),
                 Source_id = int.Parse(ComboBoxNewSource.SelectedValue.ToString()),
                 Township_id = int.Parse(ComboBoxNewTownship.SelectedValue.ToString()),
@@ -1075,6 +1167,8 @@ namespace MonitorFiles
                         mfItem.FOLDER_NAME = row[4].ToString() ?? string.Empty;             // File path
                         mfItem.SOURCE_ID = int.Parse(row[6].ToString());    // source_id
                         mfItem.TONWSHIP_ID = int.Parse(row[7].ToString());  // Township id                    
+
+                        //AANVULLEN
 
                         mfItems.Items.Add(mfItem);
 
@@ -1504,51 +1598,106 @@ namespace MonitorFiles
         private void OptionsToolStripMenuItemShowAllItems_Click(object sender, EventArgs e)
         {
             this.JsonObjSettings.AppParam[0].ItemTypeToShow = "All";
-
-            this.OptionsToolStripMenuItemShowAllItems.Checked = true;
-            this.OptionsToolStripMenuItemShowFaultedItems.Checked = false;
-            this.OptionsToolStripMenuItemShowFileIsGoneItems.Checked = false;
-            this.OptionsToolStripMenuItemShowValidItems.Checked = false;
-
-            this.bndMonitorItems.Filter = string.Empty;
+            ItemsToShow("All");
         }
 
         private void OptionsToolStripMenuItemShowValidItems_Click(object sender, EventArgs e)
         {
             this.JsonObjSettings.AppParam[0].ItemTypeToShow = "Valid";
-
-            this.OptionsToolStripMenuItemShowAllItems.Checked = false;
-            this.OptionsToolStripMenuItemShowFaultedItems.Checked = false;
-            this.OptionsToolStripMenuItemShowFileIsGoneItems.Checked = false;
-            this.OptionsToolStripMenuItemShowValidItems.Checked = true;
-
-            this.bndMonitorItems.Filter = "Status = 'Goed'";
+            ItemsToShow("Valid");
         }
 
         private void OptionsToolStripMenuItemShowFaultedItems_Click(object sender, EventArgs e)
         {
             this.JsonObjSettings.AppParam[0].ItemTypeToShow = "Faulted";
-
-            this.OptionsToolStripMenuItemShowAllItems.Checked = false;
-            this.OptionsToolStripMenuItemShowFaultedItems.Checked = true;
-            this.OptionsToolStripMenuItemShowFileIsGoneItems.Checked = false;
-            this.OptionsToolStripMenuItemShowValidItems.Checked = false;
-
-            this.bndMonitorItems.Filter = "Status = 'Fout'";
+            ItemsToShow("Faulted");
         }
 
         private void OptionsToolStripMenuItemShowFileIsGoneItems_Click(object sender, EventArgs e)
         {
             this.JsonObjSettings.AppParam[0].ItemTypeToShow = "Gone";
-
-            this.OptionsToolStripMenuItemShowAllItems.Checked = false;
-            this.OptionsToolStripMenuItemShowFaultedItems.Checked = false;
-            this.OptionsToolStripMenuItemShowFileIsGoneItems.Checked = true;
-            this.OptionsToolStripMenuItemShowValidItems.Checked = false;
-
-            this.bndMonitorItems.Filter = "Status = 'Bestand bestaat niet(meer).'";
+            ItemsToShow("Gone");
         }
 
+        private void ButtonOptionModifyFileType_Click(object sender, EventArgs e)
+        {
+            string newFileType = ComboBoxOptionsFileType.Text;
+
+            if (!newFileType.ToLower().Contains('.'))
+            {
+
+                using MfApplicationDatabaseMaintain ModifySource = new();
+                if (RadioButtonAddFileType.Checked)
+                {
+                    // add new file type
+                    string newSource = ComboBoxOptionsFileType.Text;
+                    if (!string.IsNullOrEmpty(newSource))
+                    {
+                        if (!ComboBoxOptionsFileType.Items.Contains(newSource))
+                        {
+                            // if insert succeeds then add the new source as item in the combobox list
+                            if (ModifySource.InsertIntoFileTypeTbl(newSource))
+                            {
+                                ComboBoxOptionsFileType.Items.Add(newSource);
+
+                                ComboBoxOptionsFileType.Text = string.Empty;
+                                SetStatusLabelMain = string.Format("'{0}' is toegevoegd aan de tabel {1}.", newSource, MfTableName.FILETYPE);
+                                ActiveControl = ComboBoxOptionsFileType;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // delete selected source
+                    string deleteSource = ComboBoxOptionsFileType.Text;
+                    if (!string.IsNullOrEmpty(deleteSource))
+                    {
+                        if (ModifySource.DeleteFromFileTypeTbl(deleteSource))
+                        {
+                            ComboBoxOptionsFileType.Items.Remove(deleteSource);
+                            ComboBoxOptionsFileType.Text = string.Empty;
+                            SetStatusLabelMain = string.Format("'{0}' is verwijderd uit de tabel {1}.", deleteSource, MfTableName.FILETYPE);
+                            ActiveControl = ComboBoxOptionsFileType;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show(
+                    "Er mag geen '.' in de tekst voorkomen.",
+                    "Waarschuwing.",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+        }
+
+        private void RadioButtonAddFileType_CheckedChanged(object sender, EventArgs e)
+        {
+            if (RadioButtonAddFileType.Checked)
+            {
+                ButtonOptionModifyFileType.Text = "Toevoegen";
+            }
+            else
+            {
+                ButtonOptionModifyFileType.Text = "Verwijderen";
+            }
+        }
+
+        private void ComboBoxOptionsFileType_TextChanged(object sender, EventArgs e)
+        {
+            if (ComboBoxOptionsFileType.Text.Length > 4)
+            {
+                ComboBoxOptionsFileType.ForeColor = Color.Red;
+                ButtonOptionModifyFileType.Enabled = false;
+            }
+            else
+            {
+                ComboBoxOptionsFileType.ForeColor = Color.Black;
+                ButtonOptionModifyFileType.Enabled = true;
+            }
+        }
     }
 
     public struct MonitorItem
@@ -1557,6 +1706,7 @@ namespace MonitorFiles
         public int FileOrFolder_id { get; set; }
         public string FileName { get; set; }
         public string FolderName { get; set; }
+        public int? FileType_id { get; set; }
         public int MaxDiffDays { get; set; }
         public int Source_id { get; set; }
         public int Township_id { get; set; }

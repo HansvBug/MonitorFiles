@@ -48,6 +48,14 @@
 
 
         /// <summary>
+        ///  Gets table name: FILETYPE.
+        /// </summary>
+        public static string FILETYPE
+        {
+            get { return "FILETYPE"; }
+        }
+
+        /// <summary>
         ///  Gets table name: SOURCE_ID_IDX.
         /// </summary>
         public static string SOURCE_ID_IDX
@@ -61,6 +69,14 @@
         public static string TOWNSHIP_ID_IDX
         {
             get { return "TOWNSHIP_ID_IDX"; }
+        }
+
+        /// <summary>
+        ///  Gets table name: FILE_TYPE_ID_IDX.
+        /// </summary>
+        public static string FILE_TYPE_ID_IDX
+        {
+            get { return "FILE_TYPE_ID_IDX"; }
         }
 
         /// <summary>
