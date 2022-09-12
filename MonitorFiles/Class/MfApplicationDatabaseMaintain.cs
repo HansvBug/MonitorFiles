@@ -670,13 +670,6 @@ namespace MonitorFiles.Class
                 SQLiteDataReader dr = command.ExecuteReader();
                 if (dr.HasRows)
                 {
-                    DateTime fileCreationDate;
-                    DateTime fileModification;
-                    DateTime dateModification;
-                    DateTime currentDateTime = DateTime.UtcNow.Date;
-                    int daysDifference;
-                    string curFile = string.Empty;
-
                     while (dr.Read())
                     {
                         using MfItemData itemData = new();
@@ -755,59 +748,15 @@ namespace MonitorFiles.Class
                         {
                             itemData.FILE_ORDER = -1;
                         }
-
-                        if (!string.IsNullOrEmpty(itemData.FOLDER_NAME))
+                       
+                        if (itemData.FILE_OR_FOLDER_NAME == "Bestand")
                         {
-                            if (!string.IsNullOrEmpty(itemData.FILE_NAME))
-                            {
-                                curFile = Path.Combine(itemData.FOLDER_NAME, itemData.FILE_NAME);
-
-                                if (File.Exists(curFile))
-                                {
-                                    if (itemData.FILE_OR_FOLDER_NAME == "Bestand")
-                                    {
-                                        fileCreationDate = GetFileCreationDate(curFile);
-                                    }
-
-                                    fileModification = File.GetLastWriteTime(curFile);
-                                    dateModification = fileModification.Date;
-                                    daysDifference = (int)currentDateTime.Subtract(dateModification).TotalDays;
-
-                                    itemData.fileModificationDate = fileModification;
-                                    itemData.daysDifference = daysDifference;
-
-                                    if (itemData.DIFF_MAX != -1)
-                                    {
-                                        if (daysDifference > itemData.DIFF_MAX)
-                                        {
-                                            itemData.FileStatus = "Fout";
-                                        }
-                                        else if (daysDifference <= itemData.DIFF_MAX)
-                                        {
-                                            itemData.FileStatus = "Goed";
-                                        }
-                                    }
-                                    else
-                                    {
-                                        itemData.FileStatus = string.Empty;
-                                    }                                    
-                                }
-                                else
-                                {
-                                    itemData.FileStatus = "Bestand bestaat niet (meer).";
-                                }
-                            }
-                            else
-                            {
-                                MfLogging.WriteToLogWarning("Item bevat geen bestandsnaam.");
-                            }
+                            itemsData.Items.Add(CheckTheFile(itemData));
                         }
-                        else
+                        else if (itemData.FILE_OR_FOLDER_NAME == "Map")
                         {
-                            MfLogging.WriteToLogWarning("Item bevat geen map naam.");
-                        }
-                        
-                        itemsData.Items.Add(itemData);
+                            itemsData.Items.Add(CheckTheFolder(itemData));
+                        }                        
                     }                    
                 }
 
@@ -836,6 +785,125 @@ namespace MonitorFiles.Class
             }
         }
 
+        private MfItemData CheckTheFile(MfItemData itemData)
+        {
+            if (!string.IsNullOrEmpty(itemData.FOLDER_NAME))
+            {
+                DateTime fileCreationDate;
+                DateTime fileModification;
+                DateTime dateModification;
+                DateTime currentDateTime = DateTime.UtcNow.Date;
+                int daysDifference;
+                string curFile = string.Empty;
+
+                if (!string.IsNullOrEmpty(itemData.FILE_NAME))
+                {
+                    curFile = Path.Combine(itemData.FOLDER_NAME, itemData.FILE_NAME);
+
+                    if (File.Exists(curFile))
+                    {
+                        if (itemData.FILE_OR_FOLDER_NAME == "Bestand")
+                        {
+                            fileCreationDate = GetFileCreationDate(curFile);
+                        }
+
+                        fileModification = File.GetLastWriteTime(curFile);
+                        dateModification = fileModification.Date;
+                        daysDifference = (int)currentDateTime.Subtract(dateModification).TotalDays;
+
+                        itemData.fileModificationDate = fileModification;
+                        itemData.daysDifference = daysDifference;
+
+                        if (itemData.DIFF_MAX != -1)
+                        {
+                            if (daysDifference > itemData.DIFF_MAX)
+                            {
+                                itemData.FileStatus = "Fout";
+                            }
+                            else if (daysDifference <= itemData.DIFF_MAX)
+                            {
+                                itemData.FileStatus = "Goed";
+                            }
+                        }
+                        else
+                        {
+                            itemData.FileStatus = string.Empty;
+                        }
+                    }
+                    else
+                    {
+                        itemData.FileStatus = "Bestand bestaat niet (meer).";
+                    }
+                }
+                else
+                {
+                    MfLogging.WriteToLogWarning("Item bevat geen bestandsnaam.");
+                }
+            }
+            else
+            {
+                MfLogging.WriteToLogWarning("Item bevat geen map naam.");
+            }
+
+            return itemData;
+        }
+
+        private MfItemData CheckTheFolder(MfItemData itemData)
+        {
+            if (!string.IsNullOrEmpty(itemData.FOLDER_NAME))
+            {
+                string searchfolder;
+                searchfolder = itemData.FOLDER_NAME;
+
+                if (!string.IsNullOrEmpty(itemData.FILE_TYPE_NAME))
+                {
+                    DateTime fileModification;
+                    DateTime dateModification;
+                    DateTime currentDateTime = DateTime.UtcNow.Date;
+                    int daysDifference;
+
+                    string FileType = "*." + itemData.FILE_TYPE_NAME;
+
+                    string[] allfiles = Directory.GetFiles(searchfolder, FileType, SearchOption.AllDirectories);
+
+                    itemData.fileModificationDate = DateTime.Now;
+                    foreach (string f in allfiles)
+                    {
+                        if (itemData.DIFF_MAX != -1)
+                        {
+                            fileModification = File.GetLastWriteTime(f);
+                            dateModification = fileModification.Date;
+                            daysDifference = (int)currentDateTime.Subtract(dateModification).TotalDays;
+
+                            if (daysDifference >= itemData.daysDifference)
+                            {
+                                itemData.daysDifference = daysDifference;
+                            }                            
+
+                            if (fileModification < itemData.fileModificationDate)
+                            {
+                                itemData.fileModificationDate = fileModification;
+                            }
+
+                            if (itemData.daysDifference > itemData.DIFF_MAX)
+                            {
+                                itemData.FileStatus = "Fout";                                
+                            }
+                            else if (itemData.daysDifference <= itemData.DIFF_MAX && (itemData.FileStatus != "Fout" || itemData.FileStatus != string.Empty))
+                            {
+                                itemData.FileStatus = "Goed";
+                            }
+                        }
+                        else
+                        {
+                            itemData.FileStatus = string.Empty;
+                        }
+                    }                    
+                }
+            }
+            
+            return itemData;
+        }
         private DateTime GetFileCreationDate(string file)
         {
             DateTime FileCreation;
