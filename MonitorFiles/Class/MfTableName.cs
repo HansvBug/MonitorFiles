@@ -56,6 +56,15 @@
         }
 
         /// <summary>
+        ///  Gets table name: TOPFOLDER.
+        /// </summary>
+        public static string TOPFOLDER
+        {
+            get { return "TOPFOLDER"; }
+        }
+
+
+        /// <summary>
         ///  Gets table name: SOURCE_ID_IDX.
         /// </summary>
         public static string SOURCE_ID_IDX
@@ -72,11 +81,19 @@
         }
 
         /// <summary>
-        ///  Gets table name: FILE_TYPE_ID_IDX.
+        ///  Gets table name: FILETYPE_ID_IDX.
         /// </summary>
-        public static string FILE_TYPE_ID_IDX
+        public static string FILETYPE_ID_IDX
         {
-            get { return "FILE_TYPE_ID_IDX"; }
+            get { return "FILETYPE_ID_IDX"; }
+        }
+
+        /// <summary>
+        ///  Gets table name: TOPFOLDER_ID_IDX.
+        /// </summary>
+        public static string TOPFOLDER_ID_IDX
+        {
+            get { return "TOPFOLDER_ID_IDX"; }
         }
 
         /// <summary>

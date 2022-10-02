@@ -2,7 +2,6 @@
 using System.Data.SQLite;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Xml;
 using Microsoft.Win32.SafeHandles;
 
 
@@ -69,6 +68,11 @@ namespace MonitorFiles.Class
         {            
             string insertSQL = string.Format("insert into {0} (GUID, SOURCE_NAME, CREATE_DATE) select @GUID, @SOURCE_NAME, @CREATE_DATE ", MfTableName.SOURCE);
             insertSQL += string.Format("where not exists (select SOURCE_NAME from {0} where SOURCE_NAME = @SOURCE_NAME)", MfTableName.SOURCE);
+
+            if (MfDebugMode.DebugMode)
+            {
+                MfLogging.WriteToLogDebug(string.Format("Sql statement: {0}", insertSQL));
+            }
 
             DbConnection.Open();
             using var tr = DbConnection.BeginTransaction();
@@ -150,6 +154,11 @@ namespace MonitorFiles.Class
             string insertSQL = string.Format("insert into {0} (GUID, TOWNSHIP_NAME, CREATE_DATE) select @GUID, @TOWNSHIP_NAME, @CREATE_DATE ", MfTableName.TOWNSHIP);
             insertSQL += string.Format("where not exists (select TOWNSHIP_NAME from {0} where TOWNSHIP_NAME = @TOWNSHIP_NAME)", MfTableName.TOWNSHIP);
 
+            if (MfDebugMode.DebugMode)
+            {
+                MfLogging.WriteToLogDebug(string.Format("Sql statement: {0}", insertSQL));
+            }
+
             DbConnection.Open();
             using var tr = DbConnection.BeginTransaction();
 
@@ -227,8 +236,13 @@ namespace MonitorFiles.Class
 
         public bool InsertIntoFileTypeTbl(string newFileType)
         {
-            string insertSQL = string.Format("insert into {0} (GUID, FILE_TYPE_NAME, CREATE_DATE) select @GUID, @FILE_TYPE_NAME, @CREATE_DATE ", MfTableName.FILETYPE);
-            insertSQL += string.Format("where not exists (select FILE_TYPE_NAME from {0} where FILE_TYPE_NAME = @FILE_TYPE_NAME)", MfTableName.FILETYPE);
+            string insertSQL = string.Format("insert into {0} (GUID, FILETYPE_NAME, CREATE_DATE) select @GUID, @FILETYPE_NAME, @CREATE_DATE ", MfTableName.FILETYPE);
+            insertSQL += string.Format("where not exists (select FILETYPE_NAME from {0} where FILETYPE_NAME = @FILETYPE_NAME)", MfTableName.FILETYPE);
+
+            if (MfDebugMode.DebugMode)
+            {
+                MfLogging.WriteToLogDebug(string.Format("Sql statement: {0}", insertSQL));
+            }
 
             DbConnection.Open();
             using var tr = DbConnection.BeginTransaction();
@@ -237,7 +251,7 @@ namespace MonitorFiles.Class
             try
             {
                 command.Parameters.Add(new SQLiteParameter("@GUID", Guid.NewGuid().ToString()));
-                command.Parameters.Add(new SQLiteParameter("@FILE_TYPE_NAME", newFileType));
+                command.Parameters.Add(new SQLiteParameter("@FILETYPE_NAME", newFileType));
                 command.Parameters.Add(new SQLiteParameter("@CREATE_DATE", DateTime.Now.ToString()));
 
                 command.ExecuteNonQuery();
@@ -271,12 +285,12 @@ namespace MonitorFiles.Class
         {
             DbConnection.Open();
             using var tr = DbConnection.BeginTransaction();
-            string deleteSQL = string.Format("delete from {0} where FILE_TYPE_NAME = @FILE_TYPE_NAME", MfTableName.FILETYPE);
+            string deleteSQL = string.Format("delete from {0} where FILETYPE_NAME = @FILETYPE_NAME", MfTableName.FILETYPE);
 
             SQLiteCommand command = new(deleteSQL, DbConnection);
             try
             {
-                command.Parameters.Add(new SQLiteParameter("@FILE_TYPE_NAME", fileType));
+                command.Parameters.Add(new SQLiteParameter("@FILETYPE_NAME", fileType));
 
                 command.ExecuteNonQuery();
                 MfLogging.WriteToLogInformation(string.Format("'{0}' is verwijderd uit de tabel {1}.", fileType, MfTableName.FILETYPE));
@@ -395,7 +409,7 @@ namespace MonitorFiles.Class
         {
             Dictionary<int, string> attribItems = new Dictionary<int, string>();
 
-            string selectSql = string.Format("select ID, FILE_TYPE_NAME FROM {0} order by 1", MfTableName.FILETYPE);
+            string selectSql = string.Format("select ID, FILETYPE_NAME FROM {0} order by 1", MfTableName.FILETYPE);
 
             DbConnection.Open();
             SQLiteCommand command = new(selectSql, this.DbConnection);
@@ -419,6 +433,49 @@ namespace MonitorFiles.Class
             catch (SQLiteException ex)
             {
                 MfLogging.WriteToLogError("Opvragen van de bestand extensie namen is mislukt.");
+                MfLogging.WriteToLogError("Melding :");
+                MfLogging.WriteToLogError(ex.Message);
+                if (MfDebugMode.DebugMode)
+                {
+                    MfLogging.WriteToLogDebug(ex.ToString());
+                }
+                return attribItems;
+            }
+            finally
+            {
+                command.Dispose();
+                this.DbConnection.Close();
+            }
+        }
+
+        public Dictionary<int, string> GetTopFolderItems()
+        {
+            Dictionary<int, string> attribItems = new Dictionary<int, string>();
+
+            string selectSql = string.Format("select ID, TOPFOLDER_NAME FROM {0} order by 1", MfTableName.TOPFOLDER);
+
+            DbConnection.Open();
+            SQLiteCommand command = new(selectSql, this.DbConnection);
+            try
+            {
+                SQLiteDataReader dr = command.ExecuteReader();
+                if (dr.HasRows)
+                {
+                    while (dr.Read())
+                    {
+                        if (!string.IsNullOrEmpty(dr[0].ToString()))
+                        {
+                            attribItems.Add(int.Parse(dr[0].ToString() ?? string.Empty), dr[1].ToString() ?? string.Empty);
+                        }
+                    }
+                }
+
+                dr.Close();
+                return attribItems;
+            }
+            catch (SQLiteException ex)
+            {
+                MfLogging.WriteToLogError("Opvragen gegevens is mislukt.");
                 MfLogging.WriteToLogError("Melding :");
                 MfLogging.WriteToLogError(ex.Message);
                 if (MfDebugMode.DebugMode)
@@ -479,8 +536,8 @@ namespace MonitorFiles.Class
 
         public void InsertIntoItemTbl(MonitorItem Mi)
         {
-            string insertSQL = string.Format("insert into {0} (GUID, FILE_OR_FOLDER_ID, FILE_NAME, FILE_TYPE_ID, FOLDER_NAME, DIFF_MAX, SOURCE_ID, TOWNSHIP_ID, FILE_ORDER, COMMENT, CREATE_DATE, CREATED_BY) ", MfTableName.ITEMS);
-            insertSQL += "values (@GUID, @FILE_OR_FOLDER_ID, @FILE_NAME, @FILE_TYPE_ID, @FOLDER_NAME, @DIFF_MAX, @SOURCE_ID, @TOWNSHIP_ID, @FILE_ORDER, @COMMENT, @CREATE_DATE, @CREATED_BY)";
+            string insertSQL = string.Format("insert into {0} (GUID, FILE_OR_FOLDER_ID, FILE_NAME, FILETYPE_ID, FOLDER_NAME, DIFF_MAX, SOURCE_ID, TOWNSHIP_ID, TOPFOLDER_ID, FILE_ORDER, COMMENT, CREATE_DATE, CREATED_BY) ", MfTableName.ITEMS);
+            insertSQL += "values (@GUID, @FILE_OR_FOLDER_ID, @FILE_NAME, @FILETYPE_ID, @FOLDER_NAME, @DIFF_MAX, @SOURCE_ID, @TOWNSHIP_ID, @TOPFOLDER_ID, @FILE_ORDER, @COMMENT, @CREATE_DATE, @CREATED_BY)";
 
             DbConnection.Open();
             using var tr = DbConnection.BeginTransaction();
@@ -492,9 +549,10 @@ namespace MonitorFiles.Class
                 command.Parameters.Add(new SQLiteParameter("@FILE_OR_FOLDER_ID", Mi.FileOrFolder_id));
                 command.Parameters.Add(new SQLiteParameter("@FILE_NAME", Mi.FileName));
                 command.Parameters.Add(new SQLiteParameter("@FOLDER_NAME", Mi.FolderName));
-                command.Parameters.Add(new SQLiteParameter("@FILE_TYPE_ID", Mi.FileType_id));
+                command.Parameters.Add(new SQLiteParameter("@FILETYPE_ID", Mi.FileType_id));
                 command.Parameters.Add(new SQLiteParameter("@DIFF_MAX", Mi.MaxDiffDays));
                 command.Parameters.Add(new SQLiteParameter("@SOURCE_ID", Mi.Source_id));
+                command.Parameters.Add(new SQLiteParameter("@TOPFOLDER_ID", Mi.TopFolder_id));               
                 command.Parameters.Add(new SQLiteParameter("@TOWNSHIP_ID", Mi.Township_id));
                 command.Parameters.Add(new SQLiteParameter("@FILE_ORDER", Mi.Order));
                 command.Parameters.Add(new SQLiteParameter("@COMMENT", Mi.Comment));
@@ -528,8 +586,8 @@ namespace MonitorFiles.Class
 
         public void GetAllItemsToMaintain()
         {
-            string selectSql = "select ID, GUID, FILE_OR_FOLDER_ID, FILE_TYPE_ID, FILE_NAME as Log_bestand, FOLDER_NAME as Locatie, ";
-            selectSql += "SOURCE_ID, TOWNSHIP_ID, ";
+            string selectSql = "select ID, GUID, FILE_OR_FOLDER_ID, FILETYPE_ID, FILE_NAME as Log_bestand, FOLDER_NAME as Locatie, ";
+            selectSql += "SOURCE_ID, TOWNSHIP_ID, TOPFOLDER_ID, ";            
             selectSql += "DIFF_MAX as Max_verschil_in_dagen, ";
             selectSql += "FILE_ORDER as Volgorde, COMMENT as Opmerking, ";
             selectSql += "CREATE_DATE as Datum_aangemaakt, MODIFY_DATE as Datum_gewijzigd, ";
@@ -560,8 +618,9 @@ namespace MonitorFiles.Class
 
                 cmbAndColumnName.Add(this.CreateDgvComboBox(string.Format("SELECT ID, SOURCE_NAME FROM {0} where SOURCE_NAME is not null", MfTableName.SOURCE), "SOURCE_ID"), "SOURCE_ID");
                 cmbAndColumnName.Add(this.CreateDgvComboBox(string.Format("SELECT ID, TOWNSHIP_NAME FROM {0} where TOWNSHIP_NAME is not null", MfTableName.TOWNSHIP), "TOWNSHIP_ID"), "TOWNSHIP_ID");
+                cmbAndColumnName.Add(this.CreateDgvComboBox(string.Format("SELECT ID, TOPFOLDER_NAME FROM {0} where TOPFOLDER_NAME is not null", MfTableName.TOPFOLDER), "TOPFOLDER_ID"), "TOPFOLDER_ID");
                 cmbAndColumnName.Add(this.CreateDgvComboBox(string.Format("SELECT ID, FILE_OR_FOLDER_NAME FROM {0}", MfTableName.FILEFOLDER), "FILE_OR_FOLDER_ID"), "FILE_OR_FOLDER_ID");
-                cmbAndColumnName.Add(this.CreateDgvComboBox(string.Format("SELECT ID, FILE_TYPE_NAME FROM {0}", MfTableName.FILETYPE), "FILE_TYPE_ID"), "FILE_TYPE_ID");
+                cmbAndColumnName.Add(this.CreateDgvComboBox(string.Format("SELECT ID, FILETYPE_NAME FROM {0}", MfTableName.FILETYPE), "FILETYPE_ID"), "FILETYPE_ID");
 
                 // add combobox
                 int index = 0;
@@ -653,7 +712,8 @@ namespace MonitorFiles.Class
         public MfItemsData GetAllItemsToMonitor()
         {
             string selectSql = "select ID, GUID, FILE_OR_FOLDER_NAME as Bestand_of_map, FILE_NAME as Log_bestand, FOLDER_NAME as Locatie, ";
-            selectSql += "SOURCE_NAME as Bron, TOWNSHIP_NAME as Gemeente, FILE_TYPE_NAME as bestandsextensie, ";
+            selectSql += "SOURCE_NAME as Bron, TOWNSHIP_NAME as Gemeente, FILETYPE_NAME as bestandsextensie, ";
+            selectSql += "TOPFOLDER_NAME as Alleen_huidige_map, ";
             selectSql += "DIFF_MAX as Max_verschil_in_dagen, ";
             selectSql += "FILE_ORDER as Volgorde, COMMENT as Opmerking ";
             // selectSql += "CREATE_DATE as Datum_aangemaakt, MODIFY_DATE as Datum_gewijzigd, ";
@@ -723,16 +783,26 @@ namespace MonitorFiles.Class
 
                         if(dr[7] != DBNull.Value)
                         {
-                            itemData.FILE_TYPE_NAME = dr[7].ToString() ?? string.Empty;
+                            itemData.FILETYPE_NAME = dr[7].ToString() ?? string.Empty;
                         }
                         else
                         {
-                            itemData.FILE_TYPE_NAME = String.Empty;
+                            itemData.FILETYPE_NAME = String.Empty;
                         }
 
                         if (dr[8] != DBNull.Value)
                         {
-                            itemData.DIFF_MAX = int.Parse(dr[8].ToString() ?? string.Empty, CultureInfo.InvariantCulture);
+                            itemData.TOPFOLDER_NAME = dr[8].ToString() ?? string.Empty;
+                        }
+                        else
+                        {
+                            itemData.TOPFOLDER_NAME = String.Empty;
+                        }
+
+
+                        if (dr[9] != DBNull.Value)
+                        {
+                            itemData.DIFF_MAX = int.Parse(dr[9].ToString() ?? string.Empty, CultureInfo.InvariantCulture);
                         }
                         else
                         {
@@ -740,15 +810,16 @@ namespace MonitorFiles.Class
 ;
                         }
 
-                        if (dr[9] != DBNull.Value)
+                        if (dr[10] != DBNull.Value)
                         {
-                            itemData.FILE_ORDER = int.Parse(dr[9].ToString() ?? string.Empty, CultureInfo.InvariantCulture);
+                            itemData.FILE_ORDER = int.Parse(dr[10].ToString() ?? string.Empty, CultureInfo.InvariantCulture);
                         }
                         else
                         {
                             itemData.FILE_ORDER = -1;
                         }
                        
+                        // Check how old the file or files in the foldeer are
                         if (itemData.FILE_OR_FOLDER_NAME == "Bestand")
                         {
                             itemsData.Items.Add(CheckTheFile(itemData));
@@ -855,16 +926,28 @@ namespace MonitorFiles.Class
                 string searchfolder;
                 searchfolder = itemData.FOLDER_NAME;
 
-                if (!string.IsNullOrEmpty(itemData.FILE_TYPE_NAME))
+                if (!string.IsNullOrEmpty(itemData.FILETYPE_NAME))
                 {
                     DateTime fileModification;
                     DateTime dateModification;
                     DateTime currentDateTime = DateTime.UtcNow.Date;
                     int daysDifference;
 
-                    string FileType = "*." + itemData.FILE_TYPE_NAME;
+                    string FileType = "*." + itemData.FILETYPE_NAME;
+                    string[] allfiles;
 
-                    string[] allfiles = Directory.GetFiles(searchfolder, FileType, SearchOption.AllDirectories);
+                    if (itemData.TOPFOLDER_ID == 1)  // Ja
+                    {
+                        allfiles = Directory.GetFiles(searchfolder, FileType, SearchOption.TopDirectoryOnly);
+                    }
+                    else if (itemData.TOPFOLDER_ID == 2)  // Nee
+                    {
+                        allfiles = Directory.GetFiles(searchfolder, FileType, SearchOption.AllDirectories);
+                    }
+                    else
+                    {
+                        allfiles = Directory.GetFiles(searchfolder, FileType, SearchOption.TopDirectoryOnly);
+                    }
 
                     itemData.fileModificationDate = DateTime.Now;
                     foreach (string f in allfiles)

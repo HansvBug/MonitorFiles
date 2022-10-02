@@ -37,8 +37,9 @@ namespace MonitorFiles
                     "SOURCE_ID          INTEGER                                             ," +
                     "TOWNSHIP_ID        INTEGER                                             ," +
                     "FILE_ORDER         INTEGER                                             ," +
-                    "FILE_TYPE_ID       INTEGER                                             ," +
+                    "FILETYPE_ID       INTEGER                                             ," +
                     "COMMENT            VARCHAR(500)                                        ," +
+                    "TOPFOLDER_ID       INTEGER                                             ," +
                     "FILE_TYPE          VARCHAR(10)                                         ," +
                     "CREATE_DATE        VARCHAR(10)                                         ," +
                     "MODIFY_DATE        VARCHAR(10)                                         , " +
@@ -77,11 +78,20 @@ namespace MonitorFiles
         private readonly string creTblFileType = string.Format("CREATE TABLE IF NOT EXISTS {0} (", MfTableName.FILETYPE) +
                     "ID                 INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE   ," +
                     "GUID               VARCHAR(50)  UNIQUE                                 ," +
-                    "FILE_TYPE_NAME     VARCHAR(100)                                        ," +
+                    "FILETYPE_NAME      VARCHAR(100)                                        ," +
                     "CREATE_DATE        VARCHAR(10)                                         ," +
                     "MODIFY_DATE        VARCHAR(10)                                         )";
 
-        private readonly string createTblFileTypeIndex = string.Format("CREATE UNIQUE INDEX IF NOT EXISTS {0} ON {1}(ID)", MfTableName.FILE_TYPE_ID_IDX, MfTableName.FILETYPE);
+        private readonly string createTblFileTypeIndex = string.Format("CREATE UNIQUE INDEX IF NOT EXISTS {0} ON {1}(ID)", MfTableName.FILETYPE_ID_IDX, MfTableName.FILETYPE);
+
+        private readonly string creTblTopFolder = string.Format("CREATE TABLE IF NOT EXISTS {0} (", MfTableName.TOPFOLDER) +
+                    "ID                 INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE   ," +
+                    "GUID               VARCHAR(50)  UNIQUE                                 ," +
+                    "TOPFOLDER_NAME     VARCHAR(100)                                        ," +
+                    "CREATE_DATE        VARCHAR(10)                                         ," +
+                    "MODIFY_DATE        VARCHAR(10)                                         )";
+
+        private readonly string createTblTopFolderIndex = string.Format("CREATE UNIQUE INDEX IF NOT EXISTS {0} ON {1}(ID)", MfTableName.TOPFOLDER_ID_IDX, MfTableName.TOPFOLDER);
 
         private readonly string creVwItems = string.Format("create view if not exists {0} as ", MfTableName.VW_ITEMS) +
                     "select i.ID, " +
@@ -93,7 +103,8 @@ namespace MonitorFiles
                     "t.TOWNSHIP_NAME, " +
                     "i.DIFF_MAX, " +
                     "i.FILE_ORDER, " +
-                    "ft.FILE_TYPE_NAME, " +
+                    "ft.FILETYPE_NAME, " +
+                    "tf.TOPFOLDER_NAME, " +
                     "i.COMMENT, " +
                     "i.CREATE_DATE, " +
                     "i.MODIFY_DATE, " +
@@ -104,7 +115,8 @@ namespace MonitorFiles
                     "left join FILEFOLDER f on i.FILE_OR_FOLDER_ID = f.ID " +   //TODO; string.format()
                     "left join SOURCE s on i.SOURCE_ID = s.ID " +               //TODO; string.format()
                     "left join TOWNSHIP t on i.TOWNSHIP_ID = t.ID " +           //TODO; string.format()
-                    "left join FILETYPE ft on i.FILE_TYPE_ID = ft.ID";          //TODO; string.format()
+                    "left join FILETYPE ft on i.FILETYPE_ID = ft.ID " +        //TODO; string.format()
+                    "left join TOPFOLDER tf on i.TOPFOLDER_ID = tf.ID";
 
         /// <summary>
         /// Create the database file and the tables.
@@ -123,18 +135,22 @@ namespace MonitorFiles
                 this.CreateTable(this.creTblSource, MfTableName.SOURCE, version);
                 this.CreateTable(this.creTblTownship, MfTableName.TOWNSHIP, version);
                 this.CreateTable(this.creTblFileFolder, MfTableName.FILEFOLDER, version);
-                this.CreateTable(this.creTblFileType, MfTableName.FILETYPE, version);
+                this.CreateTable(this.creTblFileType, MfTableName.FILETYPE, version);                
+                this.CreateTable(this.creTblTopFolder, MfTableName.TOPFOLDER, version);
                 
                 this.CreateIndex(this.createTblSourceIndex, MfTableName.SOURCE_ID_IDX, version);
                 this.CreateIndex(this.createTblTownshipIndex, MfTableName.TOWNSHIP_ID_IDX, version);
-                this.CreateIndex(this.createTblFileTypeIndex, MfTableName.TOWNSHIP_ID_IDX, version);                
+                this.CreateIndex(this.createTblFileTypeIndex, MfTableName.FILETYPE_ID_IDX, version);
+                this.CreateIndex(this.createTblTopFolderIndex, MfTableName.TOPFOLDER_ID_IDX, version);                
 
                 this.CreateTable(this.creVwItems, MfTableName.VW_ITEMS, version); // Create view
 
                 this.InsertFileFolder(version);
+                this.InsertTopDirOnly(version);
                 this.InsertEmptyRow(MfTableName.TOWNSHIP, "TOWNSHIP_NAME", version);
                 this.InsertEmptyRow(MfTableName.SOURCE, "SOURCE_NAME", version);
-                this.InsertEmptyRow(MfTableName.FILETYPE, "FILE_TYPE_NAME", version);
+                this.InsertEmptyRow(MfTableName.FILETYPE, "FILETYPE_NAME", version);
+                this.InsertEmptyRow(MfTableName.TOPFOLDER, "TOPFOLDER_NAME", version);
 
                 this.TablesExist = false;
                 this.InsertMeta(version);  // Set the version 1
@@ -360,45 +376,63 @@ namespace MonitorFiles
         {
             string selectSql = string.Format("select NAME from sqlite_master where type = 'table' and NAME = '{0}' order by NAME", tblName);
 
-            if (this.DbConnection != null && this.DbConnection.State == ConnectionState.Closed)
+            if (this.DbConnection != null)
             {
-                this.DbConnection.Open();
-            }
-
-            SQLiteCommand command = new(selectSql, this.DbConnection);
-            try
-            {
-                SQLiteDataReader dr = command.ExecuteReader();
-                dr.Read();
-
-                if (dr.HasRows)
+                if (this.DbConnection != null && this.DbConnection.State == ConnectionState.Closed)
                 {
-                    // Returns only one row... so no while reader read
-                    if (dr.GetValue(0).ToString() == tblName)
+                    try
                     {
-                        dr.Close();
-                        return true;
+                        this.DbConnection.Open();
+                    }
+                    catch (SQLiteException ex)
+                    {
+                        MfLogging.WriteToLogError("Melding :");
+                        MfLogging.WriteToLogError(ex.Message);
+                        return false;
                     }
                 }
 
-                return false;
-            }
-            catch (SQLiteException ex)
-            {
-                MfLogging.WriteToLogError(string.Format("Opvragen tablenaam is mislukt. Betreft tabelnaam: {0}", MfTableName.SETTINGS_META));
-                MfLogging.WriteToLogError("Melding :");
-                MfLogging.WriteToLogError(ex.Message);
-                if (MfDebugMode.DebugMode)
-                {
-                    MfLogging.WriteToLogDebug(ex.ToString());
-                }
 
+                SQLiteCommand command = new(selectSql, this.DbConnection);
+                try
+                {
+                    SQLiteDataReader dr = command.ExecuteReader();
+                    dr.Read();
+
+                    if (dr.HasRows)
+                    {
+                        // Returns only one row... so no while reader read
+                        if (dr.GetValue(0).ToString() == tblName)
+                        {
+                            dr.Close();
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+                catch (SQLiteException ex)
+                {
+                    MfLogging.WriteToLogError(string.Format("Opvragen tablenaam is mislukt. Betreft tabelnaam: {0}", MfTableName.SETTINGS_META));
+                    MfLogging.WriteToLogError("Melding :");
+                    MfLogging.WriteToLogError(ex.Message);
+                    if (MfDebugMode.DebugMode)
+                    {
+                        MfLogging.WriteToLogDebug(ex.ToString());
+                    }
+
+                    return false;
+                }
+                finally
+                {
+                    command.Dispose();
+                }
+            }
+            else
+            {
                 return false;
             }
-            finally
-            {
-                command.Dispose();
-            }
+
         }
 
         private void InsertMeta(string version)
@@ -502,7 +536,7 @@ namespace MonitorFiles
                 }
                 catch (SQLiteException ex)
                 {
-                    MfLogging.WriteToLogError(string.Format("Het invoeren van het database versienummer in de tabel {0} is mislukt. (Versie " + Convert.ToString(this.latestDbVersion, CultureInfo.InvariantCulture) + ").", MfTableName.SETTINGS_META));
+                    MfLogging.WriteToLogError(string.Format("Het invoeren een waarde in de tabel {0} is mislukt.", MfTableName.FILEFOLDER));
                     MfLogging.WriteToLogError(ex.Message);
                     if (MfDebugMode.DebugMode)
                     {
@@ -518,7 +552,59 @@ namespace MonitorFiles
             }
             else
             {
-                MfLogging.WriteToLogError(string.Format("Het invoeren van het database versienummer in de tabel {0} is mislukt.", MfTableName.SETTINGS_META));
+                MfLogging.WriteToLogError(string.Format("Het invoeren een waarde in de tabel {0} is niet gestart.", MfTableName.FILEFOLDER));
+            }
+        }
+
+        private void InsertTopDirOnly(string version)
+        {
+            if (!this.Error)
+            {
+                string insertSql = string.Format("INSERT INTO {0} (GUID, TOPFOLDER_NAME, CREATE_DATE) ", MfTableName.TOPFOLDER);
+                insertSql += "VALUES(@GUID, @TOPFOLDER_NAME, @CREATE_DATE)";
+
+                short counter = 1;
+
+                SQLiteCommand command = new(insertSql, this.DbConnection);
+                try
+                {
+                    command.Parameters.Add(new SQLiteParameter("@GUID", Guid.NewGuid().ToString()));
+                    command.Parameters.Add(new SQLiteParameter("@TOPFOLDER_NAME", "Ja"));
+                    command.Parameters.Add(new SQLiteParameter("@CREATE_DATE", DateTime.Now.ToString()));
+
+                    command.ExecuteNonQuery();
+                    MfLogging.WriteToLogInformation(string.Format("'Ja' is toegevoegd aan de tabel {0} . (Versie {1}).", MfTableName.TOPFOLDER, version));
+
+                    counter++;
+
+                    command.Parameters.Add(new SQLiteParameter("@GUID", Guid.NewGuid().ToString()));
+                    command.Parameters.Add(new SQLiteParameter("@TOPFOLDER_NAME", "Nee"));
+                    command.Parameters.Add(new SQLiteParameter("@CREATE_DATE", DateTime.Now.ToString()));
+
+                    command.ExecuteNonQuery();
+                    MfLogging.WriteToLogInformation(string.Format("'Nee' is toegevoegd aan de tabel {0} . (Versie {1}).", MfTableName.TOPFOLDER, version));
+
+
+                }
+                catch (SQLiteException ex)
+                {
+                    MfLogging.WriteToLogError(string.Format("Het invoeren een waarde in de tabel {0} is mislukt.", MfTableName.TOPFOLDER));
+                    MfLogging.WriteToLogError(ex.Message);
+                    if (MfDebugMode.DebugMode)
+                    {
+                        MfLogging.WriteToLogDebug(ex.ToString());
+                    }
+
+                    this.Error = true;
+                }
+                finally
+                {
+                    command.Dispose();
+                }
+            }
+            else
+            {
+                MfLogging.WriteToLogError(string.Format("Het invoeren een waarde in de tabel {0} is niet gestart.", MfTableName.TOPFOLDER));
             }
         }
 

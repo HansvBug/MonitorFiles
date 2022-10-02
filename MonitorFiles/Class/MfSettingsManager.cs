@@ -48,6 +48,7 @@ namespace MonitorFiles
                             DatabaseLocation = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, MfSettings.DatabaseFolder),  // Database will be stored next to de Program. Not in the roaming folder because everyone uses the same database
                             ResetAllAutoIncrementFields = true,
                             ItemTypeToShow = "All",
+                            TopMost = false,
                         },
                     },
                     FormMain = new List<FormMainParams>()
@@ -207,6 +208,11 @@ namespace MonitorFiles
             /// Gets or sets ItemTypeToShow.  (Valid, faulted, does not exists)
             /// </summary>
             public string? ItemTypeToShow { get; set; }
+
+            /// <summary>
+            /// Get or sets Topmost property of the main Window.
+            /// </summary>
+            public bool TopMost { get; set; }
         }
 
         /// <summary>

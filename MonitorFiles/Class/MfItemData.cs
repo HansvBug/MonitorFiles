@@ -19,9 +19,10 @@ namespace MonitorFiles.Class
         public string SOURCE_NAME { get; set; }
         public int TONWSHIP_ID { get; set; }
         public string TONWSHIP_NAME { get; set; }
-        public int FILE_TYPE_ID { get; set; }
-        public string FILE_TYPE_NAME { get; set; }
-
+        public int FILETYPE_ID { get; set; }
+        public int TOPFOLDER_ID { get; set; }
+        public string FILETYPE_NAME { get; set; }
+        public string TOPFOLDER_NAME { get; set; }
         public int DIFF_MAX { get; set; }
         public int FILE_ORDER { get; set; }
         public string COMMENT { get; set; }
@@ -41,10 +42,10 @@ namespace MonitorFiles.Class
             FOLDER_NAME = string.Empty;
             SOURCE_ID = -1;
             TONWSHIP_ID = -1;
-            FILE_TYPE_ID = -1;
+            FILETYPE_ID = -1;
             SOURCE_NAME = string.Empty;
             TONWSHIP_NAME = string.Empty;
-            FILE_TYPE_NAME = string.Empty;
+            FILETYPE_NAME = string.Empty;
             DIFF_MAX = -1;
             FILE_ORDER = -1;
             COMMENT = string.Empty;
